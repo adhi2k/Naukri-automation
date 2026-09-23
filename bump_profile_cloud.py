@@ -29,17 +29,28 @@ def main():
         print("ERROR: Missing NAUKRI_USERNAME or NAUKRI_PASSWORD environment variable.")
         sys.exit(1)
 
-    print(f"Authenticating as {username} (Direct API mode)...")
-    os.environ["NAUKRI_LOGIN_MODE"] = "direct"
-    os.environ["NAUKRI_BROWSER_FALLBACK"] = "false"
-
+    session_token = os.getenv("NAUKRI_SESSION_TOKEN")
     client = NaukriLoginClient(username, password)
-    try:
-        client.login()
-        print("Login successful.")
-    except Exception as e:
-        print(f"Login failed: {e}")
-        sys.exit(1)
+
+    if session_token:
+        print("Using existing NAUKRI_SESSION_TOKEN secret (bypassing login & MFA)...")
+        from src.client.naukri_client import NaukriSession
+        if hasattr(client.session.cookies, "set"):
+            client.session.cookies.set("nauk_at", session_token, domain=".naukri.com", path="/")
+        client.naukri_session = NaukriSession(session_token, client.session.cookies)
+    else:
+        print(f"Authenticating as {username} (Direct API mode)...")
+        os.environ["NAUKRI_LOGIN_MODE"] = "direct"
+        os.environ["NAUKRI_BROWSER_FALLBACK"] = "false"
+
+        try:
+            client.login()
+            print("Login successful.")
+        except Exception as e:
+            print(f"Login failed: {e}")
+            print("\nTip: Because GitHub Actions runs on Microsoft Azure cloud servers, Naukri may request an Email/SMS MFA OTP.")
+            print("To bypass this, add your active NAUKRI_SESSION_TOKEN in GitHub Secrets or use a Self-Hosted runner / Windows Task Scheduler.")
+            sys.exit(1)
 
     print("Refreshing profile headline / timestamp...")
     success = bump_profile(client, headline=headline)

@@ -28,6 +28,7 @@ jobs:
         env:
           NAUKRI_USERNAME: ${{ secrets.NAUKRI_USERNAME }}
           NAUKRI_PASSWORD: ${{ secrets.NAUKRI_PASSWORD }}
+          NAUKRI_SESSION_TOKEN: ${{ secrets.NAUKRI_SESSION_TOKEN }}
           PROFILE_HEADLINE: ${{ secrets.PROFILE_HEADLINE || 'Software Developer | B.Tech AI & Data Science | Python, Java, FastAPI, PostgreSQL, REST APIs' }}
         run: |
           python bump_profile_cloud.py
