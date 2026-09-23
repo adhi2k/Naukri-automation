@@ -416,3 +416,5 @@ OTP/MFA login is now fully supported. The main area that could use help is **ref
 This build defaults to `AUTO_APPLY=false` so the first run only searches and scores jobs. Set `AUTO_APPLY=true` after you have verified the results.
 
 If direct API authentication returns HTTP 401, set `NAUKRI_LOGIN_MODE=browser` or leave `NAUKRI_BROWSER_FALLBACK=true` and complete login/OTP in the Chrome window that opens.
+#   N a u k r i - a u t o m a t i o n  
+ 
