@@ -1,0 +1,41 @@
+# Env files
+.env
+.env.*
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+.venv/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Python build files
+build/
+dist/
+*.egg-info/
+
+# Coverage (optional)
+.coverage
+htmlcov/
+
+# Local session profiles & credentials
+.naukri_chrome_profile/
+.test_temp_profile/
+service_account.json
+applied_jobs.csv
+score_cache.json
+daily_runs.log

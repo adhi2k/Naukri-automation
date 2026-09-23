@@ -1,0 +1,33 @@
+name: Naukri Daily Profile Refresh ("Active Today")
+
+on:
+  schedule:
+    # Runs at 09:00 AM IST (03:30 AM UTC) every day
+    - cron: '30 3 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub web interface
+
+jobs:
+  bump-profile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Bump Naukri Profile Timestamp
+        env:
+          NAUKRI_USERNAME: ${{ secrets.NAUKRI_USERNAME }}
+          NAUKRI_PASSWORD: ${{ secrets.NAUKRI_PASSWORD }}
+          PROFILE_HEADLINE: ${{ secrets.PROFILE_HEADLINE || 'Software Developer | B.Tech AI & Data Science | Python, Java, FastAPI, PostgreSQL, REST APIs' }}
+        run: |
+          python bump_profile_cloud.py
