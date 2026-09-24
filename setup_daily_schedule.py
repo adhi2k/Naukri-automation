@@ -30,35 +30,50 @@ def get_python_executable(windowless=True):
     return sys.executable
 
 def install_task(time_str="09:00"):
-    python_exe = get_python_executable()
+    python_exe = get_python_executable(windowless=True)
     runner_script = os.path.abspath(os.path.join(os.path.dirname(__file__), "daily_runner.py"))
     working_dir = os.path.abspath(os.path.dirname(__file__))
 
     print(f"\n{Fore.CYAN}Installing Windows Scheduled Task '{TASK_NAME}'...{Style.RESET_ALL}")
-    print(f"  Python : {python_exe}")
-    print(f"  Script : {runner_script}")
-    print(f"  Schedule: Every day at {Fore.GREEN}{time_str}{Style.RESET_ALL}")
+    print(f"  Python       : {python_exe} (Windowless / Silent Background)")
+    print(f"  Script       : {runner_script}")
+    print(f"  Schedule     : Daily at {Fore.GREEN}{time_str}{Style.RESET_ALL}")
+    print(f"  Missed Start : {Fore.GREEN}Starts immediately whenever laptop is opened / unlocked{Style.RESET_ALL}")
+    print(f"  Power Mode   : {Fore.GREEN}Allowed on both Battery and AC Power{Style.RESET_ALL}")
 
-    # Use schtasks to create a daily task
-    cmd = [
-        "schtasks", "/create",
-        "/tn", TASK_NAME,
-        "/tr", f'"{python_exe}" "{runner_script}"',
-        "/sc", "daily",
-        "/st", time_str,
-        "/f"
-    ]
+    # Build PowerShell command to configure StartWhenAvailable + Battery execution + Logon triggers
+    ps_cmd = (
+        f'$Action = New-ScheduledTaskAction -Execute "{python_exe}" -Argument "\'{runner_script}\'" -WorkingDirectory "{working_dir}"; '
+        f'$TriggerDaily = New-ScheduledTaskTrigger -Daily -At "{time_str}"; '
+        f'$TriggerLogon = New-ScheduledTaskTrigger -AtLogOn; '
+        f'$Settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries; '
+        f'Register-ScheduledTask -TaskName "{TASK_NAME}" -Action $Action -Trigger @($TriggerDaily, $TriggerLogon) -Settings $Settings -Force'
+    )
 
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True)
+        res = subprocess.run(["powershell", "-NoProfile", "-Command", ps_cmd], capture_output=True, text=True)
         if res.returncode == 0:
-            print(f"\n{Fore.GREEN}SUCCESS! Task '{TASK_NAME}' scheduled to run daily at {time_str}.{Style.RESET_ALL}")
+            print(f"\n{Fore.GREEN}SUCCESS! Task '{TASK_NAME}' registered with Smart Catch-Up.{Style.RESET_ALL}")
+            print(f"-> Runs daily at {time_str}.")
+            print(f"-> If laptop was sleeping/closed, it will run automatically the moment you open it!")
             print(f"To test immediately, run: {Fore.YELLOW}python setup_daily_schedule.py --run-now{Style.RESET_ALL}")
         else:
-            print(f"\n{Fore.RED}Failed to create task:{Style.RESET_ALL}\n{res.stderr or res.stdout}")
-            print(f"{Fore.YELLOW}Tip: If prompted for administrator permissions, run PowerShell as Administrator.{Style.RESET_ALL}")
+            print(f"\n{Fore.YELLOW}PowerShell setup notice: {res.stderr or res.stdout}. Falling back to standard schtasks...{Style.RESET_ALL}")
+            fallback_cmd = [
+                "schtasks", "/create",
+                "/tn", TASK_NAME,
+                "/tr", f'"{python_exe}" "{runner_script}"',
+                "/sc", "daily",
+                "/st", time_str,
+                "/f"
+            ]
+            fb_res = subprocess.run(fallback_cmd, capture_output=True, text=True)
+            if fb_res.returncode == 0:
+                print(f"{Fore.GREEN}Task '{TASK_NAME}' registered successfully.{Style.RESET_ALL}")
+            else:
+                print(f"{Fore.RED}Failed to create task:{Style.RESET_ALL}\n{fb_res.stderr or fb_res.stdout}")
     except Exception as e:
-        print(f"{Fore.RED}Error executing schtasks: {e}{Style.RESET_ALL}")
+        print(f"{Fore.RED}Error registering task: {e}{Style.RESET_ALL}")
 
 def uninstall_task():
     print(f"\n{Fore.CYAN}Removing Windows Scheduled Task '{TASK_NAME}'...{Style.RESET_ALL}")

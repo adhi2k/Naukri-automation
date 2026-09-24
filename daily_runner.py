@@ -27,6 +27,8 @@ init(autoreset=True)
 
 # Set up file + console logging
 LOG_FILE = "daily_runs.log"
+STATE_FILE = "last_run_date.txt"
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -37,7 +39,34 @@ logging.basicConfig(
 )
 logger = logging.getLogger("DailyRunner")
 
+def already_ran_today() -> bool:
+    if not os.path.exists(STATE_FILE):
+        return False
+    try:
+        with open(STATE_FILE, "r", encoding="utf-8") as f:
+            last_date = f.read().strip()
+        return last_date == datetime.now().strftime("%Y-%m-%d")
+    except Exception:
+        return False
+
+def mark_run_completed():
+    try:
+        with open(STATE_FILE, "w", encoding="utf-8") as f:
+            f.write(datetime.now().strftime("%Y-%m-%d"))
+    except Exception:
+        pass
+
 def main():
+    force_run = "--force" in sys.argv or os.getenv("FORCE_RUN", "false").lower() in {"1", "true", "yes", "on"}
+    today_str = datetime.now().strftime("%Y-%m-%d")
+
+    # Guard: Don't repeat full apply loop multiple times in a single day unless forced
+    if not force_run and already_ran_today():
+        logger.info(f"Already completed today's run ({today_str}). Exiting quietly to protect account.")
+        print(f"\n{Fore.GREEN}[COMPLETED TODAY]{Style.RESET_ALL} NopeRi already completed today's applications ({today_str}).")
+        print(f"Pass {Fore.YELLOW}--force{Style.RESET_ALL} if you want to re-run right now.")
+        sys.exit(0)
+
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"\n{Fore.CYAN}{'=' * 68}{Style.RESET_ALL}")
     print(f"  {Fore.CYAN}{Style.BRIGHT}NOPERI DAILY AUTOMATION RUNNER{Style.RESET_ALL} — {now_str}")
@@ -81,6 +110,7 @@ def main():
         logger.info(
             f"Daily run completed: {applied} applied, {skipped} skipped (external), {failed} failed."
         )
+        mark_run_completed()
     except Exception as e:
         logger.error(f"Error during job application run: {e}", exc_info=True)
         sys.exit(1)
