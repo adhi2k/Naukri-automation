@@ -22,8 +22,9 @@ init(autoreset=True)
 
 TASK_NAME = "NopeRi_Daily_Automation"
 
-def get_python_executable():
-    venv_py = os.path.abspath(os.path.join(os.path.dirname(__file__), ".venv", "Scripts", "python.exe"))
+def get_python_executable(windowless=True):
+    exe_name = "pythonw.exe" if windowless else "python.exe"
+    venv_py = os.path.abspath(os.path.join(os.path.dirname(__file__), ".venv", "Scripts", exe_name))
     if os.path.exists(venv_py):
         return venv_py
     return sys.executable
