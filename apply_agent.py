@@ -437,6 +437,7 @@ def run_agent(client=None, auto_bump=None, max_applies=None):
     applied_count = 0
     skipped_ext   = 0
     failed_count  = 0
+    applied_jobs_list = []
 
     allowed_jobs = [j for j in jobs if j.job_id in allow]
     print_section_title(f"applying to {len(allowed_jobs)} filtered jobs (Daily limit: {daily_apply_limit})")
@@ -503,6 +504,7 @@ def run_agent(client=None, auto_bump=None, max_applies=None):
             save_applied_job(job, score=score, ai_detail=ai_detail)
             applied_jobs_set.add(job.job_id)
             applied_count += 1
+            applied_jobs_list.append({"title": job.title, "company": job.company, "score": score})
 
         except Exception as e:
             print_status_failed(e)
@@ -519,6 +521,20 @@ def run_agent(client=None, auto_bump=None, max_applies=None):
         skipped_ext=skipped_ext,
         failed=failed_count,
     )
+
+    # Step 6: dispatch mobile notification if configured
+    try:
+        from src.utils.notifier import send_mobile_notification
+        send_mobile_notification(
+            applied_count=applied_count,
+            total_found=len(jobs),
+            skipped_ext=skipped_ext,
+            failed_count=failed_count,
+            top_jobs=applied_jobs_list
+        )
+    except Exception as e:
+        logger.debug(f"Mobile notification skipped: {e}")
+
     return {
         "total_found": len(jobs),
         "total_allowed": len(allowed_jobs),
