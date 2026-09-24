@@ -1,420 +1,278 @@
+<div align="center">
+
+# 🚀 Naukri Automation (NopeRi)
+### Autonomous AI-Powered Job Application Agent for Naukri.com
+
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Ollama AI](https://img.shields.io/badge/AI-Ollama%20%7C%20Qwen%202.5-black.svg?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.ai/)
+[![Google Sheets](https://img.shields.io/badge/Google%20Sheets-Realtime%20Sync-34A853.svg?style=for-the-badge&logo=googlesheets&logoColor=white)](https://sheets.new)
+[![Mobile Notifications](https://img.shields.io/badge/ntfy.sh-Push%20Alerts-blueviolet.svg?style=for-the-badge&logo=matrix&logoColor=white)](https://ntfy.sh)
+[![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-Daily%20Profile%20Bump-2088FF.svg?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/features/actions)
+[![Windows](https://img.shields.io/badge/Windows-Background%20Task-0078D6.svg?style=for-the-badge&logo=windows&logoColor=white)](https://microsoft.com)
+
 <p align="center">
-  <img src="assests/logo2.svg" alt="naukri-api-client" width="680"/>
+  <b>A zero-Selenium, AI-driven automation engine that scans, filters, and applies to relevant software developer jobs on Naukri, logs them to Google Sheets, and sends push notifications to your phone — completely hands-free.</b>
 </p>
 
-# Noperi
+---
 
-A lightweight and Selenium-free Python API client for Naukri.com, designed to help you update your profile, upload your resume, search jobs, and apply to jobs (easy apply) programmatically.
+</div>
+
+## 🌟 Key Highlights
+
+- ⚡ **Pure API Execution**: Lightning-fast job scraping and applications directly through Naukri’s native REST endpoints without heavy browser automation.
+- 🧠 **100% Local AI Resume Matcher**: Evaluates job descriptions against your resume using local Ollama (`qwen2.5:14b`). Your data never leaves your computer.
+- 📊 **Multi-Device Google Sheets Sync**: Real-time logging of applied jobs to your Google Sheet. Supports separate tabs for different laptops or profiles.
+- 📥 **Interactive Job Queue**: Paste job links into your Google Sheet from your phone or browser. The agent automatically ingests and applies to them with top priority!
+- 📲 **Instant Mobile Push Notifications**: Get notified on your phone via `ntfy.sh` (or Telegram/Discord) the moment applications complete with a detailed summary.
+- 🕒 **Silent Background Scheduler**: Windows Task Scheduler integration (`pythonw.exe`) runs silently at 9:00 AM daily, wake-from-sleep catch-up, and works on battery power.
+- ☁️ **Cloud Profile Booster**: GitHub Actions workflow automatically refreshes your Naukri profile timestamp daily so recruiters always see you marked **"Active Today"**.
 
 ---
 
-**Status:** 🟢 Working (Last tested: July 2026)
+## 🏗️ System Architecture
 
----
+```mermaid
+graph TD
+    subgraph Trigger ["Automation Triggers"]
+        A1["Windows Scheduled Task (09:00 AM)"]
+        A2["Manual Terminal Run"]
+        A3["GitHub Actions (Profile Bump)"]
+    end
 
-## ✨ Features
+    subgraph Core ["NopeRi Core Engine"]
+        B["Naukri Login Client (Bearer Token / Cookie)"]
+        C["Job Harvester (Search & Recommendations)"]
+        D["Google Sheet Job Queue (Manual Ingestion)"]
+        E["Local Ollama AI (Qwen 2.5:14b Resume Filter)"]
+        F["Naukri Apply Client (One-Click + Questionnaire)"]
+    end
 
-| Feature | Status |
-|---|---|
-| Login & session management (Bearer token) | ✅ Working |
-| Resume upload (PDF) | ✅ Working |
-| Profile update (headline, name, summary) | ✅ Working |
-| Recommended jobs feed | ✅ Working |
-| `nkparam` token harvester (Selenium utility) | ✅ Working |
-| `nkparam` token generator (pure API, no Selenium) | ✅ Working |
-| Job search (`/jobapi/v3/search`) | ✅ Working |
-| Job details  (`jobapi/v1/job/`) | ✅ Working |
-| One-click job apply | ✅ Working |
-| Job questionnaire while applying| ✅ Working Partially (harcoded answer) |
-| OTP login/MFA | ✅ Working |
+    subgraph Outputs ["Real-Time Sync & Notifications"]
+        G["Google Sheets (Multi-Tab Dashboard)"]
+        H["Mobile Notification (ntfy.sh / Telegram)"]
+        I["Local applied_jobs.csv History"]
+    end
 
-
-> **Updated on April 13 2026**  
-> **No Selenium required** for core features.  
-> The `nkparam` token is generated via API.  
-> Selenium-based harvester is kept only as a backup utility.
-
-> **No Selenium required** for features 1–4. The Selenium script is only needed as a helper to harvest fresh `nkparam` tokens for the search endpoint.
-
----
-
-## 🗂️ Project Structure
-
-```
-naukri-api-client/
-├── main.py                     # Entry point — demo of all features
-├── nkPool.txt                  # Pool of captured nkparam tokens
-├── .env                        # Credentials 
-├── src/
-│   ├── client/
-│   │   ├── naukri_client.py    # Core auth + profile + resume client
-│   │   ├── job_client.py       # Recommended jobs + search + apply
-│   │   └── session.py          # requests.Session factory
-│   ├── config/
-│   │   └── constants.py        # URLs, regex patterns, app IDs
-│   ├── exceptions/
-│   │   └── exceptions.py       # Custom exception classes
-│   ├── models/
-│   │   └── models.py           # Dataclasses: Job, NaukriSession, etc.
-│   └── utils/
-│       ├── extractors.py       # HTML / JS parsing helpers
-│       └── request_helper.py   # Exponential-retry decorator
-        ├── get_Nkparam.py      # Selenium helper to harvest nkparam tokens
-        ├── nkparam_generator.py   #generate nkparam tokens 
+    A1 --> B
+    A2 --> B
+    A3 -.-> B
+    B --> C
+    D --> C
+    C --> E
+    E --> F
+    F --> G
+    F --> H
+    F --> I
 ```
 
 ---
 
-## ⚠️ IP & Hosting Advice
+## ⚡ Quick Start
 
-Naukri fingerprints IPs for every request. Many cloud providers trigger MFA or get blocked.
+### 1. Prerequisites
+- **Python 3.10+** ([python.org](https://www.python.org/downloads/)) — Ensure *"Add Python to PATH"* is checked.
+- **Git** ([git-scm.com](https://git-scm.com/))
+- **Ollama** ([ollama.ai](https://ollama.ai/)) with your preferred model:
+  ```powershell
+  ollama pull qwen2.5:14b
+  ```
 
-**Avoid:**
-- Azure (all regions)
-- GitHub Actions / CI
-- Some Google Cloud regions
-- Datacenter IP ranges
+### 2. Installation
+```powershell
+# Clone the repository
+git clone https://github.com/adhi2k/Naukri-automation.git
+cd Naukri-automation
 
-**Works:**
-- AWS (EC2 with Elastic IP)
-- Home broadband / personal IP (best)
-- Mobile hotspot (testing)
-- Residential proxy
+# Create and activate virtual environment
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 
-**Note:**
-- Sessions are IP-bound — changing IP will invalidate login
-- Avoid GitHub Actions completely (IP pool is flagged)
-
-
-
-
-## ⚙️ Installation
-
-**Requirements:** Python 3.10+
-
-```bash
-git https://github.com/Traverser25/NopeRi.git
-cd Noperi
+# Install requirements
 pip install -r requirements.txt
+playwright install chromium
 ```
 
-Create a `.env` file in the project root:
-
+### 3. Configure `.env`
+Copy `.env.example` to `.env` and fill in your details:
 ```env
-USERNAME=your_naukri_email@example.com
-PASSWORD=your_naukri_password
-```
+# Naukri Credentials
+USERNAME=your_email@gmail.com
+PASSWORD=YourPassword
 
----
-## 🚀 Quick Start 
-        you can simply run `main.py` also
+# Application Controls
+AUTO_APPLY=true
+DAILY_APPLY_LIMIT=20
+AI_SCORE_LIMIT=15
 
-        ```python
-        from src.client.naukri_client import NaukriLoginClient
-        from src.client.job_client import NaukriJobClient
-        from dotenv import load_dotenv
-        import os
-        import time
-
-        load_dotenv()
-
-        # 1. Login
-        client = NaukriLoginClient(os.getenv("USERNAME"), os.getenv("PASSWORD"))
-        client.login()
-
-        # 2. Upload resume
-        client.update_resume("path/to/your_resume.pdf")
-
-        # 3. Update profile headline
-        client.update_profile(headline="Backend Engineer | Python · Node.js · AWS")
-
-        # 4. Update profile summary
-        client.update_profile(summary="Experienced engineer with 2+ years building scalable APIs.")
-
-        # 5. Job client
-        jc = NaukriJobClient(client)
-
-        # 6. Fetch recommended jobs
-        jobs = jc.get_recommended_jobs()
-        for job in jobs:
-            print(job.title, "—", job.company)
-
-        # 7. Search jobs
-        jobs = jc.search_jobs(keyword="Node.js developer", location="Hyderabad", experience=2)
-
-        # 8. Apply to jobs (easy apply)
-        for job in jobs:
-            mandatory = job.tags[:2] if job.tags else []
-            optional  = job.tags[2:] if len(job.tags) > 2 else []
-
-            try:
-                result = jc.apply_job(
-                    job,
-                    mandatory_skills=mandatory,
-                    optional_skills=optional,
-                    source="recommended"
-                )
-
-                job_result = (result.get("jobs") or [{}])[0]
-
-                # Skip jobs with questionnaire
-                if job_result.get("questionnaire"):
-                    print("Skipped (questionnaire required):", job.title)
-                    continue
-
-                print("Applied:", job.title)
-
-            except Exception as e:
-                print("Failed:", job.title, "|", e)
-
-            time.sleep(2)
-
-
-
-
----
-
-## 📖 API Reference
-
-### `NaukriLoginClient`
-
-| Method | Description |
-|---|---|
-| `login()` | Authenticates and stores the Bearer token + session cookies |
-| `update_resume(file)` | Uploads a PDF resume; accepts a file path (`str`) or a file-like object |
-| `update_profile(headline, name, summary)` | Updates one or more profile fields (all arguments are optional) |
-| `fetch_profile_id()` | Returns your Naukri profile ID (cached after first call) |
-| `get_form_key2()` | Extracts the internal `formKey` from Naukri's JS bundle (cached) |
-
-### `NaukriJobClient`
-
-| Method | Description |
-|---|---|
-| `get_recommended_jobs()` | Returns a list of `Job` objects personalised to your profile |
-| `search_jobs(keyword, location, page, experience, ...)` | Returns job results using the search endpoint |
-| `apply_job(job)` | Applies to a job programmatically |
-
-### `Job` model
-
-```python
-@dataclass
-class Job:
-    job_id:      str
-    title:       str
-    company:     str
-    location:    str
-    experience:  str
-    salary:      str
-    posted_date: str
-    apply_link:  str
-    description: str
-    tags:        list[str]
-```
-
----
-
-## 🔑 The `nkparam` Problem (and Current Solution)
-
-Naukri's job-search endpoint (`/jobapi/v3/search`) requires a request header called `nkparam`.  
-This is not just a random token — it is essentially an **encrypted/signature key** generated using:
-- current timestamp (time-based salt)
-- session-related data
-- page/context-specific parameters
-
-The logic exists inside Naukri’s obfuscated JavaScript bundle, which makes it hard to reverse directly.
-
-If `nkparam` is missing or invalid, the API returns `403 Forbidden`.
-
----
-
-### ✅ Current Solution
-
-We now generate `nkparam` directly via API logic (no browser required).
-
-
----
-
-### 🧰 Fallback (Optional)
-
-A Selenium-based harvester is still available as a backup:
-
-**`nk_param_getter.py`**
-- Opens Chrome
-- Captures network requests
-- Extracts valid `nkparam`
-- Stores in `nkPool.txt`
-
-
-
-
----
-
-## 🤖 Automated Job Application Agent
-
-For a fully automated, AI-powered job application workflow, use:
-
-```bash
-python apply_agent.py
-```
-
-The agent is built on top of `NaukriLoginClient` and `NaukriJobClient`. If Naukri rejects the direct login endpoint, the local build can fall back to a real Chrome login and import the authenticated session cookie.
-
----
-
-### ✨ What the Agent Does
-
-The workflow runs end-to-end automatically:
-
-1. Logs into Naukri using your `.env` credentials
-2. Searches jobs using curated backend-focused keywords
-3. Scores each job using a local AI model (`Ollama`)
-4. Automatically applies to jobs that pass the score threshold
-5. Handles basic job questionnaires using predefined answers
-6. Skips external company-site applications
-7. Prevents duplicate applications using a local CSV log
-8. Displays a colored terminal dashboard with live progress
-
----
-
-### ⚙️ Prerequisites
-
-Install and run Ollama locally, then pull the model you want (the default is Qwen 2.5 7B):
-
-```bash
-ollama pull qwen2.5:7b
-```
-
-Your `.env` should look like:
-
-```env
-USERNAME=your_naukri_email@example.com
-PASSWORD=your_naukri_password
+# Local AI Engine
 OLLAMA_URL=http://127.0.0.1:11434
 OLLAMA_MODEL=qwen2.5:14b
+
+# Google Sheets Real-Time Sync & Job Queue
+GOOGLE_SHEET_WEBHOOK_URL=https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
+GOOGLE_SHEET_TAB_NAME=Applied_Jobs
+GOOGLE_SHEET_QUEUE_TAB=Job_Queue
+
+# Instant Mobile Alerts (Free & Private via ntfy.sh)
+NTFY_TOPIC=noperi_your_unique_topic
 ```
 
-No OpenAI API key is required. AI scoring stays on your machine through Ollama.
-
----
-
-### 🧠 Default Search Strategy
-
-The agent fetches jobs using curated backend-development queries such as:
-
-- Node.js Developer
-- Python Backend Developer
-- Backend Engineer
-- API Developer
-- Full Stack Developer
-
-It also filters using:
-- Experience level
-- Job freshness
-- Multiple result pages
-
----
-
-### 🔧 Configuration
-
-You can customize the behaviour directly inside `apply_agent.py`:
-
-| Variable | Purpose |
-|---|---|
-| `BQUERIES` | List of job search keywords |
-| `EXPERIENCE_LEVELS` | Experience filters |
-| `PAGES` | Number of search-result pages |
-| `JOB_AGE` | Max age of jobs to consider |
-| `SCORE_THRESHOLD` | Minimum AI score required before applying |
-
----
-
-### 📂 Application Tracking
-
-The agent keeps track of already-applied jobs using:
-
-```bash
-applied_jobs.csv
-```
-
-This ensures:
-- No duplicate applications
-- Safe repeated runs
-- Persistent local history
-
----
-
-### 🖥️ Terminal Dashboard
-
-The agent displays a live terminal dashboard showing:
-
-- Login status
-- Jobs fetched
-- AI evaluation score
-- Apply success/failure
-- Questionnaire detection
-- Final application summary
-
-Example:
-
-```text
-[FETCH] Backend Engineer — Hyderabad
-[AI SCORE] 8.7/10
-[APPLY] Success
-```
-
----
-
- External company-site applications | ❌ Skipped intentionally |
-
----
-
-### 💡 Example Workflow
-
-```bash
+### 4. Run the Agent
+```powershell
 python apply_agent.py
 ```
 
-Typical flow:
+---
+
+## 📋 Comprehensive Feature Guide
+
+### 📱 1. Mobile Push Notifications via `ntfy.sh`
+NopeRi dispatches a notification to your phone the second applications are finished.
+
+1. Install the free **ntfy** app on [iOS App Store](https://apps.apple.com/app/ntfy/id1625396347) or [Google Play Store](https://play.google.com/store/apps/details?id=io.heckel.ntfy).
+2. Open the app, tap **Subscribe to topic**, and enter the name of your topic (e.g., `noperi_adhithya_jobs`).
+3. Set `NTFY_TOPIC=noperi_adhithya_jobs` in your `.env`.
+4. When NopeRi completes, you will receive an alert with:
+   - Total jobs applied today
+   - Job titles and companies
+   - Direct link to your Google Sheet
+
+---
+
+### 📊 2. Google Sheets Dashboard & Multi-Device Setup
+
+Track all applications in real-time without opening any local files.
+
+| Feature | How It Works |
+| :--- | :--- |
+| **Zero GCP Setup** | Powered by an Apps Script Webhook. No Google Cloud Console or service account keys required. |
+| **Multi-Laptop Support** | Set `GOOGLE_SHEET_TAB_NAME=Laptop2_Applied` on your second device. It automatically creates and populates that tab in the exact same sheet. |
+| **Automatic Headers** | Newly created tabs are instantly styled with frozen bold headers. |
+
+> Complete setup guide and webhook code: [GOOGLE_SHEET_SETUP.md](GOOGLE_SHEET_SETUP.md).
+
+---
+
+### 📥 3. Google Sheets Job Queue (Apply from Anywhere)
+
+Find an interesting job on LinkedIn or Naukri while on your phone?
+
+1. Open your Google Sheet and navigate to the **`Job_Queue`** tab.
+2. Paste the job URL or 12-digit job ID into **Column A**:
+   | Column A (Job URL or ID) | Column B (Status) | Column C (Updated At) |
+   | :--- | :--- | :--- |
+   | `https://www.naukri.com/job-listings-python-dev-123456789012` | `PENDING` | *(empty)* |
+   | `010124005678` | `PENDING` | *(empty)* |
+3. During the next automated run, NopeRi will:
+   - Pull all pending jobs from this table.
+   - Inject them at the **top priority** of the application batch.
+   - Automatically mark **Column B** as `APPLIED` with a timestamp.
+
+---
+
+### 🕒 4. Silent Daily Automation (Windows Task Scheduler)
+
+Never worry about forgetting to run the script. NopeRi can run as a silent background Windows task.
+
+```powershell
+python setup_daily_schedule.py
+```
+
+- **Runs Silently**: Uses `pythonw.exe` so no command prompt window pops up while you are working.
+- **Laptop Friendly**: Executes on both battery power and AC power (`-AllowStartIfOnBatteries`).
+- **Missed Run Catch-Up**: If your laptop is asleep at 09:00 AM, it triggers automatically as soon as you wake or unlock your device.
+- **Safety Lock**: Uses `last_run_date.txt` to guarantee it never runs more than once per day.
+
+---
+
+### ☁️ 5. Cloud Profile Timestamp Booster (GitHub Actions)
+
+Naukri’s algorithm promotes profiles that are updated frequently. This repository includes a GitHub Action (`.github/workflows/naukri_profile_bump.yml`) that runs in the cloud every day at 09:00 AM IST.
+
+1. Get your session token:
+   ```powershell
+   python get_my_token.py
+   ```
+2. In your GitHub repository:
+   - Go to **Settings** > **Secrets and variables** > **Actions**.
+   - Create a repository secret named **`NAUKRI_SESSION_TOKEN`** and paste the token.
+3. Your profile timestamp will refresh daily in the cloud, keeping you visible to recruiters!
+
+---
+
+### 🔍 6. One-Command System Health Check
+
+Verify all credentials, AI connectivity, and external APIs with a single command:
+
+```powershell
+python verify_system.py
+```
 
 ```text
-Login Successful
-Fetching Jobs...
-Scoring with AI...
-Applying...
-Saved to applied_jobs.csv
-Run Complete
+======================================================================
+  NopeRi System Diagnostics & Pre-Flight Verification
+======================================================================
+  [PASS] 1. Python Environment & Core Dependencies
+  [PASS] 2. Environment Variables (.env)
+  [PASS] 3. Local AI Ollama & Model (qwen2.5:14b)
+  [PASS] 4. Naukri Credentials & Session Auth
+  [PASS] 5. Google Sheets Webhook Sync
+  [PASS] 6. Mobile Push Notification (ntfy.sh)
+  [PASS] 7. Windows Daily Task Scheduler
+======================================================================
+  RESULT: ALL 7 SYSTEMS OPERATIONAL!
+======================================================================
 ```
+
+---
+
+## 📂 Project Structure
+
+```
+Naukri-automation/
+├── apply_agent.py              # Main autonomous agent orchestrator
+├── daily_runner.py             # Scheduled wrapper with single-run lock & error recovery
+├── setup_daily_schedule.py     # Windows Task Scheduler installer (pythonw.exe)
+├── verify_system.py            # Complete end-to-end diagnostics utility
+├── bump_profile_cloud.py       # Cloud profile refresher for GitHub Actions
+├── get_my_token.py             # Helper to extract active session token
+├── GOOGLE_SHEET_SETUP.md       # Google Apps Script webhook code & instructions
+├── NEW_LAPTOP_SETUP.md         # 3-minute setup instructions for a second device
+├── applied_jobs.csv            # Persistent local log of all applied jobs
+├── requirements.txt            # Python dependencies
+├── .env                        # Local configuration & credentials
+│
+└── src/
+    ├── client/
+    │   ├── naukri_client.py    # Core authentication & profile client
+    │   ├── job_client.py       # Search, recommendation, & apply engine
+    │   └── jop_classifier.py   # AI scoring pipeline & candidate profile
+    ├── models/
+    │   └── models.py           # Dataclasses (Job, Application, Session)
+    └── utils/
+        ├── google_sheets.py    # Webhook & gspread sync + job queue reader
+        ├── notifier.py         # ntfy.sh, Telegram, & Discord notification dispatcher
+        └── profile_updater.py  # Profile headline/summary refresher
+```
+
+---
+
+## 🛡️ Safety & Rate Limiting
+
+- **Daily Apply Cap**: Enforces a strict limit (default: 20 applications/day) to prevent account flagging.
+- **Smart Delays**: Randomized human-like pauses between searches and submissions.
+- **Deduplication**: Multi-layer deduplication ensures you never apply to the same job ID twice across runs.
+- **External Apply Handling**: Intentionally bypasses external employer URLs that require third-party logins.
 
 ---
 
 ## ⚠️ Disclaimer
 
-This project is intended for personal automation of your **own** Naukri account. Use responsibly and in accordance with [Naukri's Terms of Service](https://www.naukri.com/termsAndConditions). The authors are not affiliated with Naukri / InfoEdge India Ltd.
+This tool is designed strictly for personal career automation on your **own** Naukri account. Please use responsibly and adhere to [Naukri's Terms of Service](https://www.naukri.com/termsAndConditions). The authors are not affiliated with Naukri.com or Info Edge India Ltd.
 
 ---
 
-## 🛣️ Roadmap
-
-- [x] Complete job-search endpoint integration
-- [x] Complete one-click job-apply flow
-
-- [ ] Add async support (`httpx` / `aiohttp`)
-- [ ] CLI interface
-
----
-
-## 🤝 Contributing
-
-Pull requests are welcome!
-OTP/MFA login is now fully supported. The main area that could use help is **refactoring and cleanup** — improving code structure and formatting without breaking existing functionality.
-
----
-
-
-### Local build notes
-
-This build defaults to `AUTO_APPLY=false` so the first run only searches and scores jobs. Set `AUTO_APPLY=true` after you have verified the results.
-
-If direct API authentication returns HTTP 401, set `NAUKRI_LOGIN_MODE=browser` or leave `NAUKRI_BROWSER_FALLBACK=true` and complete login/OTP in the Chrome window that opens.
-#   N a u k r i - a u t o m a t i o n  
- 
+<div align="center">
+  <sub>Built with ❤️ by Adhithya | Automated career growth for developers</sub>
+</div>
