@@ -869,7 +869,7 @@ class JobFilterPipeline2:
                     f"  [AI] "
                     f"Batch {batch_index}/"
                     f"{total_batches}: "
-                    f"{len(uncached)} jobs → "
+                    f"{len(uncached)} jobs -> "
                     f"{self.ollama_model}"
                 )
 

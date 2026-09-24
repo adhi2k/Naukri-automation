@@ -24,6 +24,8 @@ os.chdir(SCRIPT_DIR)
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
+os.environ["PYTHONIOENCODING"] = "utf-8"
+
 import logging
 from datetime import datetime
 from dotenv import load_dotenv
