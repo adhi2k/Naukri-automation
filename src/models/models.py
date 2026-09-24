@@ -38,6 +38,7 @@ class Job:
     apply_link: str
     description: str = ""
     tags: list = field(default_factory=list)
+    is_queued: bool = False
 
 
 @dataclass

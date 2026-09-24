@@ -73,24 +73,22 @@ def append_job_to_sheet(
     experience: str = "",
     salary: str = "",
     applied_at: Optional[str] = None,
+    tab_name: Optional[str] = None,
 ) -> bool:
     """
     Appends an applied job to Google Sheets.
-    
-    Supports two methods:
-    1. GOOGLE_SHEET_WEBHOOK_URL: Webhook URL from a Google Apps Script Web App (Easiest setup).
-    2. gspread Service Account: GOOGLE_SERVICE_ACCOUNT_FILE + (GOOGLE_SHEET_ID or GOOGLE_SHEET_NAME).
-
-    Returns True if successfully sent/updated, False otherwise.
-    Does not crash or raise exceptions if syncing fails.
+    Supports targeting a specific worksheet/tab (e.g. for different laptops/profiles).
     """
     if not applied_at:
         applied_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+    target_tab = tab_name or os.getenv("GOOGLE_SHEET_TAB_NAME", "Applied_Jobs")
     job_url = f"https://www.naukri.com/job-listings-{job_id}"
     score_val = str(score) if score is not None else ""
 
     payload = {
+        "action": "append",
+        "tab_name": target_tab,
         "applied_at": applied_at,
         "title": title,
         "company": company,
@@ -147,3 +145,60 @@ def append_job_to_sheet(
             return False
 
     return False
+
+
+def fetch_queued_jobs_from_sheet(queue_tab: Optional[str] = None) -> list:
+    """
+    Fetches custom pending jobs listed in a Google Sheet tab (e.g. 'Job_Queue').
+    Allows user to paste job URLs/IDs in Google Sheets from their phone/browser,
+    which NopeRi will ingest and apply to!
+    """
+    webhook_url = os.getenv("GOOGLE_SHEET_WEBHOOK_URL")
+    if not webhook_url:
+        return []
+
+    target_tab = queue_tab or os.getenv("GOOGLE_SHEET_QUEUE_TAB", "Job_Queue")
+    try:
+        import requests
+        resp = requests.get(
+            webhook_url,
+            params={"action": "get_queue", "tab_name": target_tab},
+            timeout=15,
+            allow_redirects=True
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            return data.get("jobs", [])
+    except Exception as e:
+        logger.debug(f"Could not fetch queued jobs from Google Sheet: {e}")
+    return []
+
+
+def update_queued_job_status(job_id: str, status: str = "APPLIED", queue_tab: Optional[str] = None) -> bool:
+    """
+    Marks a queued job in the Google Sheet queue tab as APPLIED, SKIPPED, etc.
+    """
+    webhook_url = os.getenv("GOOGLE_SHEET_WEBHOOK_URL")
+    if not webhook_url:
+        return False
+
+    target_tab = queue_tab or os.getenv("GOOGLE_SHEET_QUEUE_TAB", "Job_Queue")
+    payload = {
+        "action": "update_status",
+        "queue_tab": target_tab,
+        "job_id": str(job_id),
+        "status": status
+    }
+    try:
+        import requests
+        resp = requests.post(
+            webhook_url,
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=10,
+            allow_redirects=True
+        )
+        return resp.status_code in (200, 201, 302)
+    except Exception as e:
+        logger.debug(f"Failed to update queued job status: {e}")
+        return False

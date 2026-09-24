@@ -112,6 +112,7 @@ def save_applied_job(job, score=None, ai_detail=None) -> None:
     # Sync to Google Sheets if configured
     try:
         from src.utils.google_sheets import append_job_to_sheet
+        target_tab = os.getenv("GOOGLE_SHEET_TAB_NAME", "Applied_Jobs")
         synced = append_job_to_sheet(
             job_id=job.job_id,
             title=job.title,
@@ -122,9 +123,10 @@ def save_applied_job(job, score=None, ai_detail=None) -> None:
             experience=getattr(job, "experience", ""),
             salary=getattr(job, "salary", ""),
             applied_at=now_readable,
+            tab_name=target_tab,
         )
         if synced:
-            print(f"  {Fore.GREEN}[Google Sheets]{Style.RESET_ALL} Synced to Google Sheet")
+            print(f"  {Fore.GREEN}[Google Sheets]{Style.RESET_ALL} Synced to tab '{target_tab}'")
     except Exception as e:
         logger.debug(f"Google Sheet update skipped: {e}")
 
@@ -302,6 +304,57 @@ def fetch_all_jobs(jc: NaukriJobClient) -> list:
     seen_ids = set()
     all_jobs = []
 
+    # 0. Fetch custom queued jobs from Google Sheets (if configured)
+    queue_tab = os.getenv("GOOGLE_SHEET_QUEUE_TAB", "Job_Queue")
+    try:
+        from src.utils.google_sheets import fetch_queued_jobs_from_sheet
+        import re
+        raw_queue = fetch_queued_jobs_from_sheet(queue_tab)
+        if raw_queue:
+            q_count = 0
+            for item in raw_queue:
+                val = ""
+                if isinstance(item, dict):
+                    val = str(item.get("job_id") or item.get("job_url") or item.get("url") or item.get("id") or "")
+                elif isinstance(item, (list, tuple)):
+                    val = str(item[0]) if len(item) > 0 else ""
+                else:
+                    val = str(item)
+
+                match = re.search(r'(\d{10,14})', val)
+                if match:
+                    jid = match.group(1)
+                    if jid not in seen_ids:
+                        seen_ids.add(jid)
+                        try:
+                            details = jc.get_job_details(jid)
+                            raw_job = details.get("job") or details.get("jobDetails") or details
+                            job_obj = jc._parse_job(raw_job)
+                            if not job_obj.job_id:
+                                job_obj.job_id = jid
+                            job_obj.is_queued = True
+                            all_jobs.append(job_obj)
+                            q_count += 1
+                        except Exception:
+                            from src.models.models import Job
+                            job_obj = Job(
+                                job_id=jid,
+                                title="Queued Custom Job",
+                                company="N/A",
+                                location="N/A",
+                                experience="N/A",
+                                salary="Not disclosed",
+                                posted_date="Today",
+                                apply_link=f"https://www.naukri.com/job-listings-{jid}",
+                                is_queued=True
+                            )
+                            all_jobs.append(job_obj)
+                            q_count += 1
+            if q_count > 0:
+                print(f"  {Fore.GREEN}[GOOGLE SHEET QUEUE]{Style.RESET_ALL} Loaded {q_count} manual jobs from tab '{queue_tab}'")
+    except Exception as e:
+        logger.debug(f"Queue fetch failed: {e}")
+
     # 1. Fetch personalized recommended jobs based on your Naukri profile
     try:
         recom_jobs = jc.get_recommended_jobs()
@@ -394,10 +447,12 @@ def run_agent(client=None, auto_bump=None, max_applies=None):
             logger.warning(f"Profile bump skipped: {e}")
     
     # Check Google Sheets sync status
+    target_tab = os.getenv("GOOGLE_SHEET_TAB_NAME", "Applied_Jobs")
+    queue_tab = os.getenv("GOOGLE_SHEET_QUEUE_TAB", "Job_Queue")
     if os.getenv("GOOGLE_SHEET_WEBHOOK_URL"):
-        print(f"  {Fore.GREEN}Google Sheets sync : ENABLED (Webhook){Style.RESET_ALL}")
+        print(f"  {Fore.GREEN}Google Sheets sync : ENABLED (Webhook -> Tab: '{target_tab}', Queue: '{queue_tab}'){Style.RESET_ALL}")
     elif os.getenv("GOOGLE_SHEET_NAME") or os.getenv("GOOGLE_SHEET_ID"):
-        print(f"  {Fore.GREEN}Google Sheets sync : ENABLED (Service Account){Style.RESET_ALL}")
+        print(f"  {Fore.GREEN}Google Sheets sync : ENABLED (Service Account -> Tab: '{target_tab}'){Style.RESET_ALL}")
     else:
         print(f"  {Fore.YELLOW}Google Sheets sync : DISABLED (set GOOGLE_SHEET_WEBHOOK_URL in .env to enable){Style.RESET_ALL}")
 
@@ -421,17 +476,34 @@ def run_agent(client=None, auto_bump=None, max_applies=None):
     score_map    = {j["job_id"]: j for j in final_jobs}
     allow        = set(score_map.keys())
 
+    # Ensure custom queued jobs from Google Sheet bypass AI drops and get applied with top priority
+    for j in jobs:
+        if getattr(j, "is_queued", False):
+            allow.add(j.job_id)
+            if j.job_id not in score_map:
+                score_map[j.job_id] = {
+                    "job_id": j.job_id,
+                    "score": 100,
+                    "ai_detail": "Queued manually via Google Sheet table",
+                }
+
     print_pipeline_results(final_jobs)
 
     # Step 4: apply loop. Iterates only over jobs that passed the AI filter.
     applied_jobs_set = load_applied_jobs()
+
+    # Prioritize queued jobs first, followed by regular matches
+    queued_allowed = [j for j in jobs if getattr(j, "is_queued", False) and j.job_id in allow]
+    regular_allowed = [j for j in jobs if not getattr(j, "is_queued", False) and j.job_id in allow]
+    allowed_jobs = queued_allowed + regular_allowed
+
     if not auto_apply:
         print_section_title("DRY RUN — no applications will be submitted")
-        for index, job in enumerate([j for j in jobs if j.job_id in allow], start=1):
+        for index, job in enumerate(allowed_jobs, start=1):
             meta = score_map.get(job.job_id, {})
-            print_job_header(index, len([j for j in jobs if j.job_id in allow]), job, meta.get("score"), meta.get("ai_detail"))
+            print_job_header(index, len(allowed_jobs), job, meta.get("score"), meta.get("ai_detail"))
         print("\nSet AUTO_APPLY=true in .env only when you are ready to submit applications.")
-        print_summary(len(jobs), len([j for j in jobs if j.job_id in allow]), 0, 0, 0)
+        print_summary(len(jobs), len(allowed_jobs), 0, 0, 0)
         return {"total_found": len(jobs), "applied": 0}
 
     applied_count = 0
@@ -439,7 +511,6 @@ def run_agent(client=None, auto_bump=None, max_applies=None):
     failed_count  = 0
     applied_jobs_list = []
 
-    allowed_jobs = [j for j in jobs if j.job_id in allow]
     print_section_title(f"applying to {len(allowed_jobs)} filtered jobs (Daily limit: {daily_apply_limit})")
 
     for index, job in enumerate(allowed_jobs, start=1):
@@ -462,12 +533,24 @@ def run_agent(client=None, auto_bump=None, max_applies=None):
         # Skip jobs already recorded as applied.
         if job.job_id in applied_jobs_set:
             print(f"  {Fore.YELLOW}Status  :  Skipped — already applied (local history){Style.RESET_ALL}")
+            if getattr(job, "is_queued", False):
+                try:
+                    from src.utils.google_sheets import update_queued_job_status
+                    update_queued_job_status(job.job_id, status="APPLIED")
+                except Exception:
+                    pass
             continue
 
         # External apply jobs cannot be submitted via the API, skip them.
         if jc.is_external_apply(job.job_id):
             print_status_skipped_external()
             skipped_ext += 1
+            if getattr(job, "is_queued", False):
+                try:
+                    from src.utils.google_sheets import update_queued_job_status
+                    update_queued_job_status(job.job_id, status="SKIPPED (External Apply)")
+                except Exception:
+                    pass
             continue
 
         # Use the first two tags as mandatory skills and the rest as optional.
@@ -506,9 +589,23 @@ def run_agent(client=None, auto_bump=None, max_applies=None):
             applied_count += 1
             applied_jobs_list.append({"title": job.title, "company": job.company, "score": score})
 
+            if getattr(job, "is_queued", False):
+                try:
+                    from src.utils.google_sheets import update_queued_job_status
+                    update_queued_job_status(job.job_id, status="APPLIED")
+                    print(f"  {Fore.GREEN}[Google Sheet Queue]{Style.RESET_ALL} Updated status to APPLIED in sheet")
+                except Exception as err:
+                    logger.debug(f"Queue status update failed: {err}")
+
         except Exception as e:
             print_status_failed(e)
             failed_count += 1
+            if getattr(job, "is_queued", False):
+                try:
+                    from src.utils.google_sheets import update_queued_job_status
+                    update_queued_job_status(job.job_id, status="FAILED")
+                except Exception:
+                    pass
 
         # Delay between applies to avoid triggering rate limits.
         time.sleep(3)
