@@ -502,11 +502,19 @@ class NaukriLoginClient:
             return self.profile_id
 
         res = self._fetch_dashboard()
-        data = res.json()
+        if res.status_code in (401, 403):
+            raise NaukriAuthError(f"Naukri session unauthorized or blocked (HTTP {res.status_code}). Session token may have expired.")
+        if not res.ok:
+            raise NaukriParseError(f"Dashboard request failed: HTTP {res.status_code}")
+
+        try:
+            data = res.json()
+        except Exception:
+            raise NaukriParseError(f"Naukri returned non-JSON response (HTTP {res.status_code}): {res.text[:120]}")
 
         pid = data.get("profileId") or data.get("dashBoard", {}).get("profileId")
         if not pid:
-            raise NaukriParseError("profile id missing")
+            raise NaukriParseError("Profile ID missing in dashboard response")
 
         self.profile_id = pid
         return pid
@@ -624,7 +632,13 @@ class NaukriLoginClient:
 
         payload = {"profile": profile_fields, "profileId": pid}
         res = self._update_profile_request(headers, payload)
-        return ProfileUpdateResult(pid, res.json(), res.status_code)
+        if res.status_code in (401, 403):
+            raise NaukriAuthError(f"Profile update unauthorized or blocked: HTTP {res.status_code}. Session token may be expired.")
+        try:
+            body = res.json()
+        except Exception:
+            body = {"status": res.status_code, "text": res.text[:200]}
+        return ProfileUpdateResult(pid, body, res.status_code)
     
 
 
