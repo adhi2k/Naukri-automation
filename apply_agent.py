@@ -136,8 +136,8 @@ def save_applied_job(job, score=None, ai_detail=None) -> None:
 # consistent across the run. Nothing here affects business logic.
 # ----------------------------------------------------------------------------------
 
-LINE = f"{Fore.WHITE}{'─' * 68}{Style.RESET_ALL}"
-THIN = f"{Fore.WHITE}{'·' * 68}{Style.RESET_ALL}"
+LINE = f"{Fore.WHITE}{'-' * 68}{Style.RESET_ALL}"
+THIN = f"{Fore.WHITE}{'.' * 68}{Style.RESET_ALL}"
 
 
 def print_section_title(text: str) -> None:
@@ -180,10 +180,9 @@ def print_job_header(index: int, total: int, job, score=None, ai_detail=None) ->
 
 
 def _score_bar(score: int, width: int = 10) -> str:
-    # Returns a small ASCII progress bar representing the AI score (0-100).
-    # Color shifts from red to yellow to green as score increases.
+    # Returns a small progress bar representing the AI score (0-100).
     filled = int((score / 100) * width)
-    bar    = "█" * filled + "░" * (width - filled)
+    bar    = "=" * filled + "-" * (width - filled)
     color  = Fore.GREEN if score >= 70 else (Fore.YELLOW if score >= 50 else Fore.RED)
     return f"{color}{bar}{Style.RESET_ALL}"
 
@@ -219,7 +218,7 @@ def print_pipeline_results(final_jobs: list) -> None:
         f"{'Score':>{col_w[3]}}{Style.RESET_ALL}"
     )
     print(header)
-    print(f"  {Fore.WHITE}{'─' * sum(col_w)}{Style.RESET_ALL}")
+    print(f"  {Fore.WHITE}{'-' * sum(col_w)}{Style.RESET_ALL}")
 
     for i, job in enumerate(final_jobs, 1):
         score = job.get("score")

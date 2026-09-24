@@ -17,6 +17,13 @@ Run scheduled:
 
 import os
 import sys
+
+# Ensure execution always occurs within the project directory
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(SCRIPT_DIR)
+if SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, SCRIPT_DIR)
+
 import logging
 from datetime import datetime
 from dotenv import load_dotenv
@@ -25,9 +32,9 @@ from colorama import Fore, Style, init
 load_dotenv(override=True)
 init(autoreset=True)
 
-# Set up file + console logging
-LOG_FILE = "daily_runs.log"
-STATE_FILE = "last_run_date.txt"
+# Set up file + console logging with absolute paths
+LOG_FILE = os.path.join(SCRIPT_DIR, "daily_runs.log")
+STATE_FILE = os.path.join(SCRIPT_DIR, "last_run_date.txt")
 
 logging.basicConfig(
     level=logging.INFO,
