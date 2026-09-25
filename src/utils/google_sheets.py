@@ -116,7 +116,7 @@ def append_job_to_sheet(
             if resp.status_code in (200, 201, 302):
                 return True
             else:
-                logger.warning(f"Google Sheet webhook responded with code {resp.status_code}: {resp.text}")
+                logger.warning(f"Google Sheet webhook responded with code {resp.status_code}: {resp.text[:120]}")
                 return False
         except Exception as e:
             logger.warning(f"Google Sheet webhook sync failed: {e}")
