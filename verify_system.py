@@ -126,7 +126,8 @@ def test_google_sheets():
             company="NopeRi Automated Tests",
             location="Remote",
             score=99,
-            ai_detail="Automated system diagnostic check"
+            ai_detail="Automated system diagnostic check",
+            tab_name="System_Diagnostics"
         )
         if ok:
             print(f"  {PASS} Test row synced to Google Sheet via Webhook!")
