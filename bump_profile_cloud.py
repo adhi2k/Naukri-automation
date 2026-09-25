@@ -3,7 +3,7 @@ bump_profile_cloud.py
 
 Lightweight script to bump your Naukri profile timestamp in GitHub Actions or cloud cron.
 - Requires NO Chrome / Selenium
-- Requires NO local Ollama
+- Requires NO local AI models
 - Completes in ~3 seconds
 - Updates profile headline so you are shown as "Active Today" to recruiters.
 
