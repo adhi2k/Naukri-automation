@@ -44,8 +44,9 @@ def test_ai_engine():
     import requests
     groq_key = os.getenv("GROQ_API_KEY")
     if groq_key:
+        groq_key = groq_key.strip().strip("'").strip('"')
         print(f"\n{Fore.CYAN}2. AI Engine (Groq Cloud LPU Mode){Style.RESET_ALL}")
-        model = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
+        model = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b").strip().strip("'").strip('"')
         try:
             r = requests.post(
                 "https://api.groq.com/openai/v1/chat/completions",

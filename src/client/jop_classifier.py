@@ -310,15 +310,17 @@ class JobFilterPipeline2:
         batch_size=3,
         **kwargs,
     ):
-        self.groq_api_key = (
+        raw_key = (
             groq_api_key
             or os.getenv("GROQ_API_KEY")
         )
-        self.groq_model = (
+        self.groq_api_key = raw_key.strip().strip("'").strip('"') if raw_key else None
+        raw_model = (
             groq_model
             or os.getenv("GROQ_MODEL")
             or "qwen/qwen3.8-27b"
         )
+        self.groq_model = raw_model.strip().strip("'").strip('"') if raw_model else "qwen/qwen3.8-27b"
         self.cache_file = cache_file
         self.daily_apply_limit = daily_apply_limit
         self.min_apply_score = min_apply_score
