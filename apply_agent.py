@@ -20,10 +20,8 @@
 #   - colorama            : terminal color output
 #
 # Configuration:
-#   Set USERNAME and PASSWORD in .env. AI scoring runs locally through Ollama.
-#   Optional: OLLAMA_URL and OLLAMA_MODEL (default: qwen2.5:7b).
-#   Adjust BQUERIES, EXPERIENCE_LEVELS, PAGES, and JOB_AGE inside
-#   fetch_all_jobs() to tune what gets fetched each run.
+#   Set USERNAME, PASSWORD, and GROQ_API_KEY in .env.
+#   AI scoring runs via Groq Cloud LPU (free tier).
 # ----------------------------------------------------------------------------------
 
 from src.client.naukri_client import NaukriLoginClient
@@ -422,13 +420,9 @@ def fetch_all_jobs(jc: NaukriJobClient) -> list:
 def run_agent(client=None, auto_bump=None, max_applies=None):
     username = os.getenv("NAUKRI_USERNAME") or os.getenv("USERNAME")
     password = os.getenv("NAUKRI_PASSWORD") or os.getenv("PASSWORD")
-    ollama_url   = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
-    ollama_model = os.getenv("OLLAMA_MODEL", "qwen2.5:14b")
     auto_apply = os.getenv("AUTO_APPLY", "false").lower() in {"1", "true", "yes", "on"}
-    
     if auto_bump is None:
         auto_bump = os.getenv("AUTO_BUMP_PROFILE", "true").lower() in {"1", "true", "yes", "on"}
-
     daily_apply_limit = max_applies or int(os.getenv("DAILY_APPLY_LIMIT", "20"))
 
     # Step 1: authenticate and establish session.
@@ -468,13 +462,9 @@ def run_agent(client=None, auto_bump=None, max_applies=None):
     # above the pipeline's threshold are passed to the apply loop.
     ai_score_limit = int(os.getenv("AI_SCORE_LIMIT", "15"))
     print_section_title("running AI filter pipeline")
-    groq_key = os.getenv("GROQ_API_KEY")
-    if groq_key:
-        groq_model = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
-        print(f"  Engine: Cloud AI (Groq: {groq_model}) | AI evaluation cap: {ai_score_limit} jobs")
-    else:
-        print(f"  Engine: Local Ollama ({ollama_url} | model: {ollama_model}) | AI evaluation cap: {ai_score_limit} jobs")
-    pipeline   = JobFilterPipeline2(ollama_url=ollama_url, ollama_model=ollama_model, ai_score_limit=ai_score_limit)
+    groq_model = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
+    print(f"  AI Engine: Groq Cloud LPU ({groq_model}) | Evaluation Cap: {ai_score_limit} jobs")
+    pipeline = JobFilterPipeline2(ai_score_limit=ai_score_limit)
     final_jobs = pipeline.run(jobs)
 
     # Build a lookup from job_id to the pipeline result dict (score, ai_detail, etc.)

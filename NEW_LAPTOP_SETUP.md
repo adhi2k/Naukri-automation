@@ -8,11 +8,7 @@ This guide explains how to set up NopeRi on a **brand-new laptop** in 3 minutes,
 
 1. **Python 3.10+**: Download & install from [python.org](https://www.python.org/downloads/) *(Check the box: **"Add Python to PATH"** during install)*.
 2. **Git**: Download & install from [git-scm.com](https://git-scm.com/).
-3. **Ollama**: Download & install from [ollama.ai](https://ollama.ai/), then open a terminal and run:
-   ```powershell
-   ollama pull qwen2.5:14b
-   ```
-   *(Or `ollama pull qwen2.5:7b` if the new laptop has less than 16GB RAM).*
+*(No Ollama or heavy AI installations required! Cloud AI runs instantly via Groq).*
 
 ---
 
@@ -47,8 +43,9 @@ AUTO_APPLY=true
 DAILY_APPLY_LIMIT=20
 AI_SCORE_LIMIT=15
 
-OLLAMA_URL=http://127.0.0.1:11434
-OLLAMA_MODEL=qwen2.5:14b
+# --- CLOUD AI RESUME SCORER (GROQ LPU) ---
+GROQ_API_KEY=gsk_your_groq_api_key_here
+GROQ_MODEL=qwen/qwen3.8-27b
 
 # --- SAME GOOGLE SHEET, NEW TABLES ---
 GOOGLE_SHEET_WEBHOOK_URL=https://script.google.com/macros/s/AKfycbyokuU4Qsc3dp1u9-uMs8TMwZfpHgPV-zzwAmmU2psQaZNVvDoO50HQ4E__K4oE01mk/exec

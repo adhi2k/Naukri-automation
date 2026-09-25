@@ -4,7 +4,7 @@
 ### Autonomous AI-Powered Job Application Agent for Naukri.com
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Ollama AI](https://img.shields.io/badge/AI-Ollama%20%7C%20Qwen%202.5-black.svg?style=for-the-badge&logo=ollama&logoColor=white)](https://ollama.ai/)
+[![Groq AI](https://img.shields.io/badge/AI-Groq%20Cloud%20LPU%20%7C%20Qwen%203.8-F55036.svg?style=for-the-badge&logo=fastapi&logoColor=white)](https://groq.com/)
 [![Google Sheets](https://img.shields.io/badge/Google%20Sheets-Realtime%20Sync-34A853.svg?style=for-the-badge&logo=googlesheets&logoColor=white)](https://sheets.new)
 [![Mobile Notifications](https://img.shields.io/badge/ntfy.sh-Push%20Alerts-blueviolet.svg?style=for-the-badge&logo=matrix&logoColor=white)](https://ntfy.sh)
 [![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-Daily%20Profile%20Bump-2088FF.svg?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/features/actions)
@@ -21,7 +21,7 @@
 ## 🌟 Key Highlights
 
 - ⚡ **Pure API Execution**: Lightning-fast job scraping and applications directly through Naukri’s native REST endpoints without heavy browser automation.
-- 🧠 **100% Local AI Resume Matcher**: Evaluates job descriptions against your resume using local Ollama (`qwen2.5:14b`). Your data never leaves your computer.
+- 🧠 **Ultra-Fast Cloud AI Resume Matcher**: Evaluates job descriptions against your resume using Groq Cloud LPUs (`qwen/qwen3.8-27b`) in 0.25s. No heavy local models or GPU required.
 - 📊 **Multi-Device Google Sheets Sync**: Real-time logging of applied jobs to your Google Sheet. Supports separate tabs for different laptops or profiles.
 - 📥 **Interactive Job Queue**: Paste job links into your Google Sheet from your phone or browser. The agent automatically ingests and applies to them with top priority!
 - 📲 **Instant Mobile Push Notifications**: Get notified on your phone via `ntfy.sh` (or Telegram/Discord) the moment applications complete with a detailed summary.
@@ -44,7 +44,7 @@ graph TD
         B["Naukri Login Client (Bearer Token / Cookie)"]
         C["Job Harvester (Search & Recommendations)"]
         D["Google Sheet Job Queue (Manual Ingestion)"]
-        E["Local Ollama AI (Qwen 2.5:14b Resume Filter)"]
+        E["Groq Cloud AI (Qwen 3.8:27b Resume Filter)"]
         F["Naukri Apply Client (One-Click + Questionnaire)"]
     end
 
@@ -73,10 +73,7 @@ graph TD
 ### 1. Prerequisites
 - **Python 3.10+** ([python.org](https://www.python.org/downloads/)) — Ensure *"Add Python to PATH"* is checked.
 - **Git** ([git-scm.com](https://git-scm.com/))
-- **Ollama** ([ollama.ai](https://ollama.ai/)) with your preferred model:
-  ```powershell
-  ollama pull qwen2.5:14b
-  ```
+- **Free Groq API Key** ([console.groq.com](https://console.groq.com/keys)) — Takes 10 seconds to generate, no credit card required.
 
 ### 2. Installation
 ```powershell
@@ -105,9 +102,9 @@ AUTO_APPLY=true
 DAILY_APPLY_LIMIT=20
 AI_SCORE_LIMIT=15
 
-# Local AI Engine
-OLLAMA_URL=http://127.0.0.1:11434
-OLLAMA_MODEL=qwen2.5:14b
+# Cloud AI Engine (Groq LPU - Free)
+GROQ_API_KEY=gsk_your_groq_api_key_here
+GROQ_MODEL=qwen/qwen3.8-27b
 
 # Google Sheets Real-Time Sync & Job Queue
 GOOGLE_SHEET_WEBHOOK_URL=https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
@@ -215,7 +212,7 @@ python verify_system.py
 ======================================================================
   [PASS] 1. Python Environment & Core Dependencies
   [PASS] 2. Environment Variables (.env)
-  [PASS] 3. Local AI Ollama & Model (qwen2.5:14b)
+  [PASS] 2. AI Engine (Groq Cloud LPU: qwen/qwen3.8-27b)
   [PASS] 4. Naukri Credentials & Session Auth
   [PASS] 5. Google Sheets Webhook Sync
   [PASS] 6. Mobile Push Notification (ntfy.sh)

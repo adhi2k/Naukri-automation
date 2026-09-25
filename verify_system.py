@@ -3,7 +3,7 @@ verify_system.py
 
 Master diagnostic suite to verify all NopeRi components end-to-end:
 1. Environment & Credentials Configuration
-2. Local Ollama LLM Connection & Model Status
+2. Groq Cloud AI Connection & Latency
 3. Naukri Authentication & Token Generation
 4. Profile Bump / 'Active Today' Refresher
 5. Google Sheets Webhook Sync
@@ -68,27 +68,9 @@ def test_ai_engine():
             print(f"  {FAIL} Groq connection error: {e}")
             return False
 
-    print(f"\n{Fore.CYAN}2. Local Ollama LLM Engine{Style.RESET_ALL}")
-    ollama_url = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
-    model = os.getenv("OLLAMA_MODEL", "qwen2.5:14b")
-    try:
-        r = requests.get(f"{ollama_url}/api/tags", timeout=5)
-        if r.status_code == 200:
-            models = [m.get("name") for m in r.json().get("models", [])]
-            print(f"  {PASS} Ollama service running at {ollama_url}")
-            matched = any(model in m for m in models)
-            if matched:
-                print(f"  {PASS} Model loaded: {model}")
-                return True
-            else:
-                print(f"  {WARN} Model '{model}' not found in installed models: {models}")
-                return False
-        else:
-            print(f"  {FAIL} Ollama responded with HTTP {r.status_code}")
-            return False
-    except Exception as e:
-        print(f"  {FAIL} Could not connect to Ollama: {e}")
-        return False
+    print(f"\n{Fore.CYAN}2. AI Engine (Groq Cloud LPU Mode){Style.RESET_ALL}")
+    print(f"  {FAIL} Missing GROQ_API_KEY in .env! Please set your free Groq API key.")
+    return False
 
 def test_naukri_auth():
     print(f"\n{Fore.CYAN}3. Naukri Authentication (Direct API Mode){Style.RESET_ALL}")

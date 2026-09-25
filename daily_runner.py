@@ -4,7 +4,7 @@ daily_runner.py
 Unified daily automation entrypoint for NopeRi:
 1. Logs into Naukri.
 2. Bumps profile headline/timestamp so you are marked "Active Today" for recruiters.
-3. Searches, deduplicates, scores with local Ollama, and submits applications up to daily limit.
+3. Searches, deduplicates, scores with Groq Cloud AI, and submits applications up to daily limit.
 4. Updates Google Sheets in real-time.
 5. Logs run statistics to daily_runs.log.
 

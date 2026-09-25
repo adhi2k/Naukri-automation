@@ -301,32 +301,24 @@ class JobFilterPipeline2:
 
     def __init__(
         self,
-        openai_api_key=None,
+        groq_api_key=None,
+        groq_model=None,
         cache_file="score_cache.json",
         daily_apply_limit=50,
         min_apply_score=60,
         ai_score_limit=100,
         batch_size=3,
-        ollama_url=None,
-        ollama_model=None,
+        **kwargs,
     ):
-
-        self.ollama_url = (
-            ollama_url
-            or os.getenv("OLLAMA_URL")
-            or "http://127.0.0.1:11434"
-        ).rstrip("/")
-
-        self.ollama_model = (
-            ollama_model
-            or os.getenv("OLLAMA_MODEL")
-            or "qwen2.5:14b"
+        self.groq_api_key = (
+            groq_api_key
+            or os.getenv("GROQ_API_KEY")
         )
-
-        self.url = f"{self.ollama_url}/api/chat"
-        self.groq_api_key = os.getenv("GROQ_API_KEY")
-        self.groq_model = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
-
+        self.groq_model = (
+            groq_model
+            or os.getenv("GROQ_MODEL")
+            or "qwen/qwen3.8-27b"
+        )
         self.cache_file = cache_file
         self.daily_apply_limit = daily_apply_limit
         self.min_apply_score = min_apply_score
@@ -867,7 +859,7 @@ class JobFilterPipeline2:
 
             if uncached:
 
-                provider_name = f"Groq ({self.groq_model})" if self.groq_api_key else f"Ollama ({self.ollama_model})"
+                provider_name = f"Groq Cloud ({self.groq_model})"
                 print(
                     f"  [AI] "
                     f"Batch {batch_index}/"
@@ -961,7 +953,7 @@ class JobFilterPipeline2:
         return result
 
     # =========================================================
-    # OLLAMA
+    # GROQ CLOUD AI
     # =========================================================
 
     def _call_ai(self, jobs):
@@ -1116,156 +1108,51 @@ JOBS:
 {job_block}
 """
 
-        # Method 1: High-Speed Free Cloud AI (Groq LPU)
-        if self.groq_api_key:
-            try:
-                groq_resp = requests.post(
-                    "https://api.groq.com/openai/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {self.groq_api_key}",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "model": self.groq_model,
-                        "messages": [{"role": "user", "content": prompt}],
-                        "response_format": {"type": "json_object"},
-                        "temperature": 0.1
-                    },
-                    timeout=30
-                )
-                if groq_resp.status_code == 200:
-                    payload = groq_resp.json()
-                    content = payload.get("choices", [{}])[0].get("message", {}).get("content", "")
-                    if content:
-                        clean_content = re.sub(r"```json|```", "", content).strip()
-                        return json.loads(clean_content)
-                else:
-                    print(f"  [GROQ WARNING] HTTP {groq_resp.status_code}: {groq_resp.text[:120]}. Falling back to Ollama...")
-            except Exception as e:
-                print(f"  [GROQ WARNING] {e}. Falling back to Ollama...")
+        if not self.groq_api_key:
+            print("  [GROQ ERROR] GROQ_API_KEY is not set in .env! Please set your free Groq API key.")
+            return {}
 
-        # Method 2: Local Ollama Fallback
         try:
-
-            response = requests.post(
-                self.url,
+            groq_resp = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
                 headers={
-                    "Content-Type":
-                    "application/json"
+                    "Authorization": f"Bearer {self.groq_api_key}",
+                    "Content-Type": "application/json"
                 },
                 json={
-                    "model":
-                    self.ollama_model,
-
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": prompt
-                        }
-                    ],
-
-                    "stream": False,
-
-                    "format": "json",
-
-                    "options": {
-                        "temperature": 0.1
-                    }
+                    "model": self.groq_model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "response_format": {"type": "json_object"},
+                    "temperature": 0.1
                 },
-
-                # 14B can be slow on your laptop.
-                timeout=600
+                timeout=30
             )
-
-            if response.status_code != 200:
-
-                print(
-                    "OLLAMA HTTP ERROR:",
-                    response.status_code,
-                    response.text[:500]
-                )
-
+            if groq_resp.status_code == 200:
+                payload = groq_resp.json()
+                content = payload.get("choices", [{}])[0].get("message", {}).get("content", "")
+                if content:
+                    clean_content = re.sub(r"```json|```", "", content).strip()
+                    try:
+                        data = json.loads(clean_content)
+                        return data if isinstance(data, dict) else {}
+                    except json.JSONDecodeError:
+                        match = re.search(r"\{.*\}", clean_content, re.S)
+                        if match:
+                            return json.loads(match.group(0))
+            else:
+                print(f"  [GROQ ERROR] HTTP {groq_resp.status_code}: {groq_resp.text[:200]}")
                 return {}
-
-            payload = response.json()
-
-            content = (
-                payload
-                .get("message", {})
-                .get("content", "")
-            )
-
-            if not content:
-
-                print(
-                    "OLLAMA ERROR: "
-                    "empty response"
-                )
-
-                return {}
-
-            content = re.sub(
-                r"```json|```",
-                "",
-                content
-            ).strip()
-
-            try:
-
-                data = json.loads(content)
-
-            except json.JSONDecodeError:
-
-                match = re.search(
-                    r"\{.*\}",
-                    content,
-                    re.S
-                )
-
-                if not match:
-
-                    print(
-                        "OLLAMA JSON PARSE ERROR:",
-                        content[:500]
-                    )
-
-                    return {}
-
-                data = json.loads(
-                    match.group(0)
-                )
-
-            return (
-                data
-                if isinstance(data, dict)
-                else {}
-            )
-
-        except requests.exceptions.ConnectionError:
-
-            print(
-                "OLLAMA CONNECTION ERROR."
-            )
-
-            return {}
-
         except requests.exceptions.Timeout:
-
-            print(
-                f"OLLAMA TIMEOUT: "
-                f"{self.ollama_model}"
-            )
-
+            print(f"  [GROQ TIMEOUT] Request timed out for model {self.groq_model}")
+            return {}
+        except requests.exceptions.ConnectionError:
+            print("  [GROQ CONNECTION ERROR] Failed to connect to Groq Cloud API.")
+            return {}
+        except Exception as e:
+            print(f"  [GROQ ERROR]: {e}")
             return {}
 
-        except Exception as error:
-
-            print(
-                "OLLAMA ERROR:",
-                error
-            )
-
-            return {}
+        return {}
 
     # =========================================================
     # RANK
