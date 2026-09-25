@@ -26,11 +26,10 @@ termux-wake-lock
 
 # 4. Install Python Dependencies
 echo "[4/6] Installing Python packages..."
-pip install --upgrade pip
-pip install requests urllib3 python-dotenv pycryptodome colorama
+pip install requests urllib3 python-dotenv pycryptodome colorama --break-system-packages || pip install requests urllib3 python-dotenv pycryptodome colorama
 
 # Try installing curl_cffi if wheel is available (optional)
-pip install curl_cffi || echo "Standard requests fallback active (100% functional on Android)"
+pip install curl_cffi --break-system-packages 2>/dev/null || pip install curl_cffi 2>/dev/null || echo "Standard requests fallback active (100% functional on Android)"
 
 # 5. Setup Termux Boot Auto-Start Directory
 echo "[5/6] Setting up Termux Boot auto-start..."
