@@ -158,24 +158,45 @@ def test_mobile_notification():
         print(f"  {FAIL} Notification error: {e}")
         return False
 
-def test_windows_scheduler():
-    print(f"\n{Fore.CYAN}7. Windows Task Scheduler & Local Guard{Style.RESET_ALL}")
-    task_name = "NopeRi_Daily_Automation"
-    cmd = ["schtasks", "/query", "/tn", task_name, "/fo", "LIST"]
-    try:
-        res = subprocess.run(cmd, capture_output=True, text=True)
-        if res.returncode == 0:
-            print(f"  {PASS} Task '{task_name}' is ACTIVE and ready in Windows Task Scheduler")
-            for line in res.stdout.splitlines():
-                if "Next Run Time" in line or "Status" in line:
-                    print(f"    • {line.strip()}")
-            return True
-        else:
-            print(f"  {WARN} Task '{task_name}' not found in schtasks")
+def test_scheduler():
+    import platform
+    is_win = platform.system() == "Windows"
+    title = "Windows Task Scheduler" if is_win else "Android / Linux Cron Scheduler"
+    print(f"\n{Fore.CYAN}7. {title}{Style.RESET_ALL}")
+    
+    if is_win:
+        task_name = "NopeRi_Daily_Automation"
+        cmd = ["schtasks", "/query", "/tn", task_name, "/fo", "LIST"]
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True)
+            if res.returncode == 0:
+                print(f"  {PASS} Task '{task_name}' is ACTIVE in Windows Task Scheduler")
+                for line in res.stdout.splitlines():
+                    if "Next Run Time" in line or "Status" in line:
+                        print(f"    • {line.strip()}")
+                return True
+            else:
+                print(f"  {WARN} Task '{task_name}' not found in schtasks")
+                return False
+        except Exception as e:
+            print(f"  {FAIL} Scheduler check error: {e}")
             return False
-    except Exception as e:
-        print(f"  {FAIL} Scheduler check error: {e}")
-        return False
+    else:
+        # Linux / Android Termux
+        try:
+            res = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
+            if res.returncode == 0 and "daily_runner.py" in res.stdout:
+                print(f"  {PASS} Daily 09:00 AM Cron task is ACTIVE and scheduled in background!")
+                for line in res.stdout.splitlines():
+                    if "daily_runner.py" in line:
+                        print(f"    • Schedule: {line.strip()}")
+                return True
+            else:
+                print(f"  {WARN} daily_runner.py not found in crontab")
+                return False
+        except Exception as e:
+            print(f"  {FAIL} Crontab check error: {e}")
+            return False
 
 def main():
     print(f"\n{Fore.CYAN}{'=' * 65}{Style.RESET_ALL}")
@@ -190,7 +211,7 @@ def main():
     results["Profile Bump"] = test_profile_bump(client)
     results["Google Sheets"] = test_google_sheets()
     results["Mobile Alert"] = test_mobile_notification()
-    results["Windows Scheduler"] = test_windows_scheduler()
+    results["Background Scheduler"] = test_scheduler()
 
     print(f"\n{Fore.CYAN}{'=' * 65}{Style.RESET_ALL}")
     print(f"  {Style.BRIGHT}SYSTEM DIAGNOSTIC SUMMARY{Style.RESET_ALL}")
