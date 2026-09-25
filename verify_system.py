@@ -40,9 +40,35 @@ def test_environment():
     print(f"  {PASS} Daily Quota: {os.getenv('DAILY_APPLY_LIMIT', '20')} applications")
     return True
 
-def test_ollama():
-    print(f"\n{Fore.CYAN}2. Local Ollama LLM Engine{Style.RESET_ALL}")
+def test_ai_engine():
     import requests
+    groq_key = os.getenv("GROQ_API_KEY")
+    if groq_key:
+        print(f"\n{Fore.CYAN}2. AI Engine (Groq Cloud LPU Mode){Style.RESET_ALL}")
+        model = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
+        try:
+            r = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {groq_key}", "Content-Type": "application/json"},
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": "Respond with JSON: {\"status\": \"ok\"}"}],
+                    "response_format": {"type": "json_object"}
+                },
+                timeout=10
+            )
+            if r.status_code == 200:
+                print(f"  {PASS} Groq Cloud API connected successfully! (Latency: {r.elapsed.total_seconds():.2f}s)")
+                print(f"  {PASS} Model loaded: {model}")
+                return True
+            else:
+                print(f"  {FAIL} Groq returned HTTP {r.status_code}: {r.text[:120]}")
+                return False
+        except Exception as e:
+            print(f"  {FAIL} Groq connection error: {e}")
+            return False
+
+    print(f"\n{Fore.CYAN}2. Local Ollama LLM Engine{Style.RESET_ALL}")
     ollama_url = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434")
     model = os.getenv("OLLAMA_MODEL", "qwen2.5:14b")
     try:
@@ -176,7 +202,7 @@ def main():
 
     results = {}
     results["Environment"] = test_environment()
-    results["Ollama"] = test_ollama()
+    results["AI Engine"] = test_ai_engine()
     client = test_naukri_auth()
     results["Naukri Auth"] = client is not None
     results["Profile Bump"] = test_profile_bump(client)

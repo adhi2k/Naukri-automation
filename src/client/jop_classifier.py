@@ -324,6 +324,8 @@ class JobFilterPipeline2:
         )
 
         self.url = f"{self.ollama_url}/api/chat"
+        self.groq_api_key = os.getenv("GROQ_API_KEY")
+        self.groq_model = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
 
         self.cache_file = cache_file
         self.daily_apply_limit = daily_apply_limit
@@ -865,12 +867,13 @@ class JobFilterPipeline2:
 
             if uncached:
 
+                provider_name = f"Groq ({self.groq_model})" if self.groq_api_key else f"Ollama ({self.ollama_model})"
                 print(
                     f"  [AI] "
                     f"Batch {batch_index}/"
                     f"{total_batches}: "
                     f"{len(uncached)} jobs -> "
-                    f"{self.ollama_model}"
+                    f"{provider_name}"
                 )
 
                 scores = self._call_ai(
@@ -1113,6 +1116,35 @@ JOBS:
 {job_block}
 """
 
+        # Method 1: High-Speed Free Cloud AI (Groq LPU)
+        if self.groq_api_key:
+            try:
+                groq_resp = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.groq_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": self.groq_model,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "response_format": {"type": "json_object"},
+                        "temperature": 0.1
+                    },
+                    timeout=30
+                )
+                if groq_resp.status_code == 200:
+                    payload = groq_resp.json()
+                    content = payload.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    if content:
+                        clean_content = re.sub(r"```json|```", "", content).strip()
+                        return json.loads(clean_content)
+                else:
+                    print(f"  [GROQ WARNING] HTTP {groq_resp.status_code}: {groq_resp.text[:120]}. Falling back to Ollama...")
+            except Exception as e:
+                print(f"  [GROQ WARNING] {e}. Falling back to Ollama...")
+
+        # Method 2: Local Ollama Fallback
         try:
 
             response = requests.post(

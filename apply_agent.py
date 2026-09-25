@@ -468,7 +468,12 @@ def run_agent(client=None, auto_bump=None, max_applies=None):
     # above the pipeline's threshold are passed to the apply loop.
     ai_score_limit = int(os.getenv("AI_SCORE_LIMIT", "15"))
     print_section_title("running AI filter pipeline")
-    print(f"  Ollama: {ollama_url} | model: {ollama_model} | AI evaluation cap: {ai_score_limit} jobs")
+    groq_key = os.getenv("GROQ_API_KEY")
+    if groq_key:
+        groq_model = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
+        print(f"  Engine: Cloud AI (Groq: {groq_model}) | AI evaluation cap: {ai_score_limit} jobs")
+    else:
+        print(f"  Engine: Local Ollama ({ollama_url} | model: {ollama_model}) | AI evaluation cap: {ai_score_limit} jobs")
     pipeline   = JobFilterPipeline2(ollama_url=ollama_url, ollama_model=ollama_model, ai_score_limit=ai_score_limit)
     final_jobs = pipeline.run(jobs)
 
