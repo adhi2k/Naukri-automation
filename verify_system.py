@@ -184,19 +184,44 @@ def test_scheduler():
             return False
     else:
         # Linux / Android Termux
+        found = False
+        schedule_line = ""
         try:
             res = subprocess.run(["crontab", "-l"], capture_output=True, text=True)
             if res.returncode == 0 and "daily_runner.py" in res.stdout:
-                print(f"  {PASS} Daily 09:00 AM Cron task is ACTIVE and scheduled in background!")
+                found = True
                 for line in res.stdout.splitlines():
                     if "daily_runner.py" in line:
-                        print(f"    • Schedule: {line.strip()}")
-                return True
-            else:
-                print(f"  {WARN} daily_runner.py not found in crontab")
-                return False
-        except Exception as e:
-            print(f"  {FAIL} Crontab check error: {e}")
+                        schedule_line = line.strip()
+                        break
+        except Exception:
+            pass
+
+        # Fallback check direct spool files or termux boot
+        if not found:
+            spool_dir = "/data/data/com.termux/files/usr/var/spool/cron/crontabs"
+            if os.path.isdir(spool_dir):
+                for f in os.listdir(spool_dir):
+                    fp = os.path.join(spool_dir, f)
+                    try:
+                        with open(fp, "r") as sfile:
+                            content = sfile.read()
+                            if "daily_runner.py" in content:
+                                found = True
+                                for line in content.splitlines():
+                                    if "daily_runner.py" in line:
+                                        schedule_line = line.strip()
+                                        break
+                    except Exception:
+                        pass
+
+        if found:
+            print(f"  {PASS} Daily 09:00 AM Cron task is ACTIVE and scheduled in background!")
+            if schedule_line:
+                print(f"    • Schedule: {schedule_line}")
+            return True
+        else:
+            print(f"  {WARN} daily_runner.py not found in crontab (Run: bash setup_cron_mobile.sh)")
             return False
 
 def main():
