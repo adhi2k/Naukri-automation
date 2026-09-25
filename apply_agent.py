@@ -286,17 +286,20 @@ def print_summary(total_found: int, total_allowed: int, applied: int, skipped_ex
 def fetch_all_jobs(jc: NaukriJobClient) -> list:
 
     BQUERIES = [
-    {"keyword": "Python Developer",     "location": "Chennai"},
-    {"keyword": "Python Developer",     "location": "Bangalore"},
-    {"keyword": "Java Developer",       "location": "Chennai"},
-    {"keyword": "Software Developer",   "location": "Chennai"},
-    {"keyword": "FastAPI Developer",    "location": ""},
-    {"keyword": "Backend Developer",    "location": "Bangalore"},
-]
-
+        {"keyword": "Python Developer",     "location": "Chennai"},
+        {"keyword": "Python Developer",     "location": "Bangalore"},
+        {"keyword": "Python Developer",     "location": "Hyderabad"},
+        {"keyword": "Java Developer",       "location": "Chennai"},
+        {"keyword": "Java Developer",       "location": "Bangalore"},
+        {"keyword": "Software Developer",   "location": "Chennai"},
+        {"keyword": "Software Engineer",    "location": "Bangalore"},
+        {"keyword": "AI ML Engineer",       "location": ""},
+        {"keyword": "Backend Developer",    "location": "Bangalore"},
+        {"keyword": "FastAPI Developer",    "location": ""},
+    ]
 
     EXPERIENCE_LEVELS = [0, 1, 2]
-    PAGES   = 2
+    PAGES   = 3
     JOB_AGE = 15
 
     seen_ids = set()
