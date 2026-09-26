@@ -1,8 +1,8 @@
 """
 setup_daily_schedule.py
 
-Utility to schedule NopeRi Daily Runner in Windows Task Scheduler.
-This allows NopeRi to automatically run every morning, refresh your
+Utility to schedule Naukri Automation Agent in Windows Task Scheduler.
+This allows the agent to automatically run every morning, refresh your
 Naukri profile ("Active Today"), apply to jobs, and sync to Google Sheets.
 
 Usage:
@@ -20,7 +20,7 @@ from colorama import Fore, Style, init
 
 init(autoreset=True)
 
-TASK_NAME = "NopeRi_Daily_Automation"
+TASK_NAME = "Naukri_Daily_Automation"
 
 def get_python_executable(windowless=True):
     exe_name = "pythonw.exe" if windowless else "python.exe"
@@ -112,7 +112,7 @@ def run_now():
         print(f"{Fore.RED}Error: {e}{Style.RESET_ALL}")
 
 def main():
-    parser = argparse.ArgumentParser(description="NopeRi Windows Scheduler Setup")
+    parser = argparse.ArgumentParser(description="Naukri Automation Agent Windows Scheduler Setup")
     parser.add_argument("--install", nargs="?", const="09:00", help="Install daily task (e.g. 09:00 or 10:30)")
     parser.add_argument("--uninstall", action="store_true", help="Remove the daily task")
     parser.add_argument("--status", action="store_true", help="Check task status")
@@ -131,7 +131,7 @@ def main():
     else:
         # Default interactive menu
         print(f"\n{Fore.CYAN}{'=' * 50}{Style.RESET_ALL}")
-        print(f"  {Style.BRIGHT}NopeRi Windows Daily Scheduler{Style.RESET_ALL}")
+        print(f"  {Style.BRIGHT}Naukri Automation Agent Daily Scheduler{Style.RESET_ALL}")
         print(f"{Fore.CYAN}{'=' * 50}{Style.RESET_ALL}")
         print("  1. Install / Schedule Daily Task (Default 09:00 AM)")
         print("  2. Check Status")

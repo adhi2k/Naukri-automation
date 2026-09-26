@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ==============================================================================
-#  NopeRi - 100% Automated Android Termux Setup Script
+#  Naukri Automation Agent - 100% Automated Android Termux Setup Script
 #  Configures daily background auto-apply with Zero Manual Effort
 # ==============================================================================
 
@@ -8,7 +8,7 @@ set -e
 
 echo ""
 echo "================================================================="
-echo "   🚀 NOPERI ANDROID TERMUX AUTOMATION INSTALLER"
+echo "   🚀 NAUKRI AUTOMATION AGENT ANDROID INSTALLER"
 echo "================================================================="
 echo ""
 
@@ -54,7 +54,7 @@ crond 2>/dev/null || true
 
 echo ""
 echo "================================================================="
-echo "  ✅ NOPERI MOBILE AUTOMATION IS READY & ACTIVE!"
+echo "  ✅ NAUKRI AUTOMATION AGENT IS READY & ACTIVE!"
 echo "================================================================="
 echo "  📅 Schedule:  Runs everyday at 09:00 AM silently in background"
 echo "  ⚡ AI Engine: Groq Cloud LPU (0% phone CPU/battery)"

@@ -1,7 +1,7 @@
 """
 src/utils/notifier.py
 
-Mobile notification dispatcher for NopeRi.
+Mobile notification dispatcher for Naukri Automation Agent.
 Sends instant push notifications to your mobile phone when daily applications complete.
 
 Supported notification channels (configured in .env):
@@ -31,7 +31,7 @@ def send_mobile_notification(
     Returns True if at least one notification was successfully delivered.
     """
     now_str = datetime.now().strftime("%I:%M %p")
-    title = f"NopeRi: {applied_count} Jobs Applied!"
+    title = f"Naukri Automation: {applied_count} Jobs Applied!"
     
     # Construct clean message body
     lines = [

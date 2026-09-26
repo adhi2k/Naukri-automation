@@ -1,7 +1,7 @@
 <div align="center">
 
-# 🚀 Naukri Automation (NopeRi)
-### Autonomous AI-Powered Job Application Agent for Naukri.com
+# 🚀 Naukri Automation Agent
+### Autonomous AI-Powered Job Application System for Naukri.com
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Groq AI](https://img.shields.io/badge/AI-Groq%20Cloud%20LPU%20%7C%20Qwen%203.8-F55036.svg?style=for-the-badge&logo=fastapi&logoColor=white)](https://groq.com/)
@@ -40,7 +40,7 @@ graph TD
         A3["GitHub Actions (Profile Bump)"]
     end
 
-    subgraph Core ["NopeRi Core Engine"]
+    subgraph Core ["Naukri Automation Core Engine"]
         B["Naukri Login Client (Bearer Token / Cookie)"]
         C["Job Harvester (Search & Recommendations)"]
         D["Google Sheet Job Queue (Manual Ingestion)"]
@@ -125,12 +125,12 @@ python apply_agent.py
 ## 📋 Comprehensive Feature Guide
 
 ### 📱 1. Mobile Push Notifications via `ntfy.sh`
-NopeRi dispatches a notification to your phone the second applications are finished.
+Naukri Automation Agent dispatches a notification to your phone the second applications are finished.
 
 1. Install the free **ntfy** app on [iOS App Store](https://apps.apple.com/app/ntfy/id1625396347) or [Google Play Store](https://play.google.com/store/apps/details?id=io.heckel.ntfy).
-2. Open the app, tap **Subscribe to topic**, and enter the name of your topic (e.g., `noperi_adhithya_jobs`).
-3. Set `NTFY_TOPIC=noperi_adhithya_jobs` in your `.env`.
-4. When NopeRi completes, you will receive an alert with:
+2. Open the app, tap **Subscribe to topic**, and enter the name of your topic (e.g., `naukri_adhithya_jobs`).
+3. Set `NTFY_TOPIC=naukri_adhithya_jobs` in your `.env`.
+4. When Naukri Automation Agent completes, you will receive an alert with:
    - Total jobs applied today
    - Job titles and companies
    - Direct link to your Google Sheet
@@ -161,7 +161,7 @@ Find an interesting job on LinkedIn or Naukri while on your phone?
    | :--- | :--- | :--- |
    | `https://www.naukri.com/job-listings-python-dev-123456789012` | `PENDING` | *(empty)* |
    | `010124005678` | `PENDING` | *(empty)* |
-3. During the next automated run, NopeRi will:
+3. During the next automated run, Naukri Automation Agent will:
    - Pull all pending jobs from this table.
    - Inject them at the **top priority** of the application batch.
    - Automatically mark **Column B** as `APPLIED` with a timestamp.
@@ -170,7 +170,7 @@ Find an interesting job on LinkedIn or Naukri while on your phone?
 
 ### 🕒 4. Silent Daily Automation (Windows Task Scheduler)
 
-Never worry about forgetting to run the script. NopeRi can run as a silent background Windows task.
+Never worry about forgetting to run the script. The agent can run as a silent background Windows task.
 
 ```powershell
 python setup_daily_schedule.py
@@ -208,7 +208,7 @@ python verify_system.py
 
 ```text
 ======================================================================
-  NopeRi System Diagnostics & Pre-Flight Verification
+  Naukri Automation Agent Diagnostics & Pre-Flight Verification
 ======================================================================
   [PASS] 1. Python Environment & Core Dependencies
   [PASS] 2. Environment Variables (.env)

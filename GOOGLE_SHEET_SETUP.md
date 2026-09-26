@@ -1,6 +1,6 @@
 # Google Sheets Real-time Sync & Job Queue Setup Guide
 
-You can sync all applied jobs from NopeRi directly to your personal Google Sheet in real-time, connect multiple laptops/profiles to different tabs in the same spreadsheet, and even manually feed jobs from your phone or browser into a **Job Queue** table!
+You can sync all applied jobs from Naukri Automation Agent directly to your personal Google Sheet in real-time, connect multiple laptops/profiles to different tabs in the same spreadsheet, and even manually feed jobs from your phone or browser into a **Job Queue** table!
 
 ---
 
@@ -16,7 +16,7 @@ You can sync all applied jobs from NopeRi directly to your personal Google Sheet
 
 ```javascript
 /**
- * NopeRi Multi-Device & Job Queue Webhook
+ * Naukri Automation Multi-Device & Job Queue Webhook
  * Supports writing to custom tabs (per laptop/profile) and reading/updating Job Queue
  */
 
@@ -177,10 +177,10 @@ You can manually queue jobs in Google Sheets without running a manual command!
    - **Column A (`Job URL or ID`)**: Paste the Naukri job URL or 12-digit job ID.
      *(Example: `https://www.naukri.com/job-listings-python-developer-company-010124001234` or `010124001234`)*
    - **Column B (`Status`)**: Leave blank or type `PENDING`.
-3. When NopeRi runs:
+3. When Naukri Automation Agent runs:
    - It fetches all pending jobs from this table.
    - It prioritizes them **at the top** of the apply queue.
-   - Once applied, NopeRi automatically updates **Column B** to `APPLIED` with the timestamp in **Column C**!
+   - Once applied, the agent automatically updates **Column B** to `APPLIED` with the timestamp in **Column C**!
 
 ---
 

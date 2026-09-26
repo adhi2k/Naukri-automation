@@ -1,6 +1,6 @@
-# Setting Up NopeRi on a New Laptop
+# Setting Up Naukri Automation Agent on a New Laptop
 
-This guide explains how to set up NopeRi on a **brand-new laptop** in 3 minutes, connect it to your **existing Google Sheet** using a dedicated new tab, and configure custom jobs to be applied from a **Job Queue** table.
+This guide explains how to set up Naukri Automation Agent on a **brand-new laptop** in 3 minutes, connect it to your **existing Google Sheet** using a dedicated new tab, and configure custom jobs to be applied from a **Job Queue** table.
 
 ---
 
@@ -83,7 +83,7 @@ Want to apply to specific jobs you find while browsing on your phone or computer
    | :--- | :--- | :--- |
    | `https://www.naukri.com/job-listings-python-dev-123456789012` | `PENDING` | *(leave blank)* |
    | `010124005678` | `PENDING` | *(leave blank)* |
-3. When NopeRi runs on the new laptop:
+3. When Naukri Automation Agent runs on the new laptop:
    - It reads all pending jobs from this table first.
    - It prioritizes and applies to them with top priority.
    - It marks Column B as `APPLIED` with the timestamp in Column C.

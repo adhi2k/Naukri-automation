@@ -75,7 +75,7 @@ def main():
         print("Naukri's security firewall blocks cloud server IPs or requires fresh tokens.")
         print("")
         print("GOOD NEWS: Your local laptop ALREADY handles this every single day!")
-        print("The Windows Task Scheduler ('NopeRi_Daily_Automation') automatically")
+        print("The background scheduler ('Naukri_Daily_Automation') automatically")
         print("bumps your profile timestamp from your residential IP at 09:00 AM daily,")
         print("where it runs with 100% success and no cloud blocks.")
         print("=" * 68)

@@ -1,7 +1,7 @@
 """
 daily_runner.py
 
-Unified daily automation entrypoint for NopeRi:
+Unified daily automation entrypoint for Naukri Automation Agent:
 1. Logs into Naukri.
 2. Bumps profile headline/timestamp so you are marked "Active Today" for recruiters.
 3. Searches, deduplicates, scores with Groq Cloud AI, and submits applications up to daily limit.
@@ -72,13 +72,13 @@ def main():
     # Guard: Don't repeat full apply loop multiple times in a single day unless forced
     if not force_run and already_ran_today():
         logger.info(f"Already completed today's run ({today_str}). Exiting quietly to protect account.")
-        print(f"\n{Fore.GREEN}[COMPLETED TODAY]{Style.RESET_ALL} NopeRi already completed today's applications ({today_str}).")
+        print(f"\n{Fore.GREEN}[COMPLETED TODAY]{Style.RESET_ALL} Naukri Automation Agent already completed today's applications ({today_str}).")
         print(f"Pass {Fore.YELLOW}--force{Style.RESET_ALL} if you want to re-run right now.")
         sys.exit(0)
 
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"\n{Fore.CYAN}{'=' * 68}{Style.RESET_ALL}")
-    print(f"  {Fore.CYAN}{Style.BRIGHT}NOPERI DAILY AUTOMATION RUNNER{Style.RESET_ALL} — {now_str}")
+    print(f"  {Fore.CYAN}{Style.BRIGHT}NAUKRI AUTOMATION AGENT DAILY RUNNER{Style.RESET_ALL} — {now_str}")
     print(f"{Fore.CYAN}{'=' * 68}{Style.RESET_ALL}\n")
 
     from src.client.naukri_client import NaukriLoginClient

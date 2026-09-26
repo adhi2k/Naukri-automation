@@ -151,7 +151,7 @@ def fetch_queued_jobs_from_sheet(queue_tab: Optional[str] = None) -> list:
     """
     Fetches custom pending jobs listed in a Google Sheet tab (e.g. 'Job_Queue').
     Allows user to paste job URLs/IDs in Google Sheets from their phone/browser,
-    which NopeRi will ingest and apply to!
+    which the agent will ingest and apply to!
     """
     webhook_url = os.getenv("GOOGLE_SHEET_WEBHOOK_URL")
     if not webhook_url:

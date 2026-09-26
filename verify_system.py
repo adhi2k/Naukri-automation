@@ -1,7 +1,7 @@
 """
 verify_system.py
 
-Master diagnostic suite to verify all NopeRi components end-to-end:
+Master diagnostic suite to verify all Naukri Automation Agent components end-to-end:
 1. Environment & Credentials Configuration
 2. Groq Cloud AI Connection & Latency
 3. Naukri Authentication & Token Generation
@@ -9,7 +9,7 @@ Master diagnostic suite to verify all NopeRi components end-to-end:
 5. Google Sheets Webhook Sync
 6. Mobile Notification Dispatcher
 7. Local Applied Jobs Ledger & State Guard
-8. Windows Task Scheduler Registration
+8. Background Task Scheduler Registration
 """
 
 import os
@@ -54,7 +54,8 @@ def test_ai_engine():
                 json={
                     "model": model,
                     "messages": [{"role": "user", "content": "Respond with JSON: {\"status\": \"ok\"}"}],
-                    "response_format": {"type": "json_object"}
+                    "response_format": {"type": "json_object"},
+                    "max_tokens": 50
                 },
                 timeout=10
             )
@@ -123,7 +124,7 @@ def test_google_sheets():
         ok = append_job_to_sheet(
             job_id="test_diag_" + str(int(time.time())),
             title="System Diagnostic Test Job",
-            company="NopeRi Automated Tests",
+            company="Naukri Automation Tests",
             location="Remote",
             score=99,
             ai_detail="Automated system diagnostic check",
@@ -148,7 +149,7 @@ def test_mobile_notification():
             total_found=170,
             skipped_ext=0,
             failed_count=0,
-            top_jobs=[{"title": "Full System Check OK", "company": "NopeRi Suite", "score": 100}]
+            top_jobs=[{"title": "Full System Check OK", "company": "Naukri Automation Suite", "score": 100}]
         )
         if ok:
             print(f"  {PASS} Mobile push notification delivered successfully!")
@@ -167,10 +168,13 @@ def test_scheduler():
     print(f"\n{Fore.CYAN}7. {title}{Style.RESET_ALL}")
     
     if is_win:
-        task_name = "NopeRi_Daily_Automation"
-        cmd = ["schtasks", "/query", "/tn", task_name, "/fo", "LIST"]
+        task_name = "Naukri_Daily_Automation"
+        res = subprocess.run(["schtasks", "/query", "/tn", task_name, "/fo", "LIST"], capture_output=True, text=True)
+        if res.returncode != 0:
+            task_name = "NopeRi_Daily_Automation"
+            res = subprocess.run(["schtasks", "/query", "/tn", task_name, "/fo", "LIST"], capture_output=True, text=True)
+
         try:
-            res = subprocess.run(cmd, capture_output=True, text=True)
             if res.returncode == 0:
                 print(f"  {PASS} Task '{task_name}' is ACTIVE in Windows Task Scheduler")
                 for line in res.stdout.splitlines():
@@ -227,7 +231,7 @@ def test_scheduler():
 
 def main():
     print(f"\n{Fore.CYAN}{'=' * 65}{Style.RESET_ALL}")
-    print(f"  {Style.BRIGHT}NOPERI COMPLETE SYSTEM DIAGNOSTIC SUITE{Style.RESET_ALL}")
+    print(f"  {Style.BRIGHT}NAUKRI AUTOMATION AGENT DIAGNOSTIC SUITE{Style.RESET_ALL}")
     print(f"{Fore.CYAN}{'=' * 65}{Style.RESET_ALL}")
 
     results = {}

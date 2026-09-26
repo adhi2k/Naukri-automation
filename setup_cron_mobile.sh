@@ -4,18 +4,18 @@ pkg install -y cronie termux-services 2>/dev/null || true
 PROJECT_DIR="$HOME/Naukri-automation"
 
 # Install crontab using standard POSIX crontab command
-echo "0 9 * * * cd $PROJECT_DIR && python daily_runner.py >> $PROJECT_DIR/daily_runs.log 2>&1" > "$HOME/noperi_cron_tmp"
-crontab "$HOME/noperi_cron_tmp"
-rm -f "$HOME/noperi_cron_tmp"
+echo "0 9 * * * cd $PROJECT_DIR && python daily_runner.py >> $PROJECT_DIR/daily_runs.log 2>&1" > "$HOME/naukri_cron_tmp"
+crontab "$HOME/naukri_cron_tmp"
+rm -f "$HOME/naukri_cron_tmp"
 
 # Setup auto-start script for Termux:Boot
 mkdir -p "$HOME/.termux/boot"
-cat << 'EOF' > "$HOME/.termux/boot/start_noperi_cron.sh"
+cat << 'EOF' > "$HOME/.termux/boot/start_naukri_cron.sh"
 #!/data/data/com.termux/files/usr/bin/bash
 termux-wake-lock
 crond
 EOF
-chmod +x "$HOME/.termux/boot/start_noperi_cron.sh"
+chmod +x "$HOME/.termux/boot/start_naukri_cron.sh"
 
 # Start background cron daemon
 killall crond 2>/dev/null || true

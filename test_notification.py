@@ -17,7 +17,7 @@ from src.utils.notifier import send_mobile_notification
 
 def main():
     print(f"\n{Fore.CYAN}{'=' * 60}{Style.RESET_ALL}")
-    print(f"  {Style.BRIGHT}Testing NopeRi Mobile Notification Dispatcher{Style.RESET_ALL}")
+    print(f"  {Style.BRIGHT}Testing Naukri Automation Agent Mobile Notification Dispatcher{Style.RESET_ALL}")
     print(f"{Fore.CYAN}{'=' * 60}{Style.RESET_ALL}\n")
 
     tg_token = os.getenv("TELEGRAM_BOT_TOKEN")

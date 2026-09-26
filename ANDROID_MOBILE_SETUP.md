@@ -1,6 +1,6 @@
 # 📱 100% Automated Android Setup Guide (Zero Manual Work)
 
-Run NopeRi completely in the background on your **Android Phone**!
+Run Naukri Automation Agent completely in the background on your **Android Phone**!
 - **0% Phone Battery / RAM** (All AI scoring happens in the cloud via Groq LPU).
 - **Runs everyday at 09:00 AM automatically** using real mobile data/Wi-Fi.
 - **Never gets IP blocked** by Naukri.
