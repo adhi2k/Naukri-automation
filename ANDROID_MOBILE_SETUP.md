@@ -40,8 +40,8 @@ nano .env
 
 Paste your `.env` settings:
 ```env
-USERNAME=adhithyad.1.1.2@gmail.com
-PASSWORD=YourNaukriPasswordHere
+USERNAME=YourNaukri_Email
+PASSWORD=YourNaukri_Password
 
 AUTO_APPLY=true
 DAILY_APPLY_LIMIT=20
@@ -52,12 +52,12 @@ GROQ_API_KEY=gsk_your_groq_api_key_here
 GROQ_MODEL=qwen/qwen3.8-27b
 
 # --- GOOGLE SHEET WEBHOOK ---
-GOOGLE_SHEET_WEBHOOK_URL=https://script.google.com/macros/s/AKfycbyokuU4Qsc3dp1u9-uMs8TMwZfpHgPV-zzwAmmU2psQaZNVvDoO50HQ4E__K4oE01mk/exec
+GOOGLE_SHEET_WEBHOOK_URL=https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
 GOOGLE_SHEET_TAB_NAME=Applied_Jobs
 GOOGLE_SHEET_QUEUE_TAB=Job_Queue
 
 # --- MOBILE NOTIFICATION ---
-NTFY_TOPIC=noperi_adhithya_jobs
+NTFY_TOPIC=noperi_your_unique_topic
 ```
 
 *(Press `Ctrl + O` then `Enter` to save, and `Ctrl + X` to exit nano)*.
