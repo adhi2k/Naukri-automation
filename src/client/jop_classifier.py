@@ -38,16 +38,9 @@ class JobFilterPipeline2:
         "secondary_skills": [
             "gcp",
             "google cloud",
-            "flutter",
             "html",
             "css",
             "ui/ux",
-            "machine learning",
-            "deep learning",
-            "artificial intelligence",
-            "rag",
-            "retrieval augmented generation",
-            "vector database",
             "postgis",
             "database management",
             "problem solving",
@@ -61,12 +54,7 @@ class JobFilterPipeline2:
             "fastapi",
             "postgresql",
             "postgis",
-            "vector database",
-            "rag",
             "rest api",
-            "flutter",
-            "ai",
-            "machine learning",
             "automation",
             "web development",
             "javascript",
@@ -233,6 +221,22 @@ class JobFilterPipeline2:
 
         "qa tester",
         "test engineer",
+
+        # Sales / Support / BPO / Non-dev roles
+        "sales engineer",
+        "pre-sales",
+        "presales",
+        "solutions engineer",
+        "technical support engineer",
+        "customer support engineer",
+        "business development",
+        "bpo",
+        "voice process",
+        "non-voice process",
+        "technical support executive",
+        "it support executive",
+        "customer success",
+        "account manager",
     }
 
     # =========================================================
@@ -306,7 +310,7 @@ class JobFilterPipeline2:
         cache_file="score_cache.json",
         daily_apply_limit=50,
         min_apply_score=60,
-        ai_score_limit=100,
+        ai_score_limit=None,
         batch_size=3,
         **kwargs,
     ):
@@ -518,14 +522,18 @@ class JobFilterPipeline2:
 
             job_id = job.get("job_id")
 
-            if job_id is None:
-                result.append(job)
+            if job_id:
+                key = str(job_id).strip()
+            else:
+                title = (job.get("title") or "").strip().lower()
+                company = (job.get("company") or "").strip().lower()
+                location = (job.get("location") or "").strip().lower()
+                key = (title, company, location)
+
+            if key in seen:
                 continue
 
-            if job_id in seen:
-                continue
-
-            seen.add(job_id)
+            seen.add(key)
             result.append(job)
 
         return result
@@ -537,50 +545,57 @@ class JobFilterPipeline2:
     def location_filter(self, jobs):
 
         result = []
+        remote_terms = ["remote", "work from home", "wfh", "anywhere in india", "pan india", "hybrid"]
 
         for job in jobs:
 
-            location = (
-                job.get("location") or ""
-            ).lower()
+            raw_loc = job.get("location") or ""
+            loc_lower = raw_loc.strip().lower()
+            title_lower = (job.get("title") or "").strip().lower()
+            desc_lower = (job.get("description") or "").strip().lower()
 
-            title = (
-                job.get("title") or ""
-            ).lower()
-
-            description = (
-                job.get("description") or ""
-            ).lower()
-
-            location_text = (
-                location
-                + " "
-                + title
-                + " "
-                + description
-            )
-
-            location_match = any(
-                loc in location_text
-                for loc in self.PREFERRED_LOCATIONS
-            )
-
-            remote_match = (
-                self.ALLOW_REMOTE
-                and any(term in location_text for term in ["remote", "work from home", "wfh", "anywhere in india", "pan india", "hybrid"])
-            )
-
-            if location_match or remote_match:
-
-                result.append(job)
-
-            else:
-
-                print(
-                    f"  [LOCATION SKIP] "
-                    f"{job.get('title')} "
-                    f"@ {job.get('location')}"
+            if loc_lower:
+                # 1. Primary check: strictly evaluate the location field
+                location_match = any(
+                    loc in loc_lower
+                    for loc in self.PREFERRED_LOCATIONS
                 )
+                remote_match = (
+                    self.ALLOW_REMOTE
+                    and (
+                        any(term in loc_lower for term in remote_terms)
+                        or any(term in title_lower for term in remote_terms)
+                    )
+                )
+
+                if location_match or remote_match:
+                    result.append(job)
+                else:
+                    print(
+                        f"  [LOCATION SKIP] "
+                        f"{job.get('title')} "
+                        f"@ {raw_loc}"
+                    )
+            else:
+                # 2. Fallback: only check title/description if location field is empty/missing
+                fallback_text = f"{title_lower} {desc_lower}"
+                location_match = any(
+                    loc in fallback_text
+                    for loc in self.PREFERRED_LOCATIONS
+                )
+                remote_match = (
+                    self.ALLOW_REMOTE
+                    and any(term in fallback_text for term in remote_terms)
+                )
+
+                if location_match or remote_match:
+                    result.append(job)
+                else:
+                    print(
+                        f"  [LOCATION SKIP] "
+                        f"{job.get('title')} "
+                        f"@ (No Location Specified)"
+                    )
 
         return result
 
@@ -705,8 +720,7 @@ class JobFilterPipeline2:
                 job.get("title") or ""
             ).lower()
 
-            # Reject clearly unwanted roles
-
+            # 1. Reject clearly unwanted roles
             if any(
                 keyword in title
                 for keyword in self.ROLE_VETO_KEYWORDS
@@ -719,21 +733,28 @@ class JobFilterPipeline2:
 
                 continue
 
-            # Must look like a technical/software role
+            # 2. Primary Gate: Check against TARGET_TITLE_KEYWORDS
+            if any(
+                keyword in title
+                for keyword in self.TARGET_TITLE_KEYWORDS
+            ):
 
-            if not any(
+                result.append(job)
+                continue
+
+            # 3. Secondary Fallback: Check against SOFTWARE_KEYWORDS
+            if any(
                 keyword in title
                 for keyword in self.SOFTWARE_KEYWORDS
             ):
 
-                print(
-                    f"  [NOT SOFTWARE] "
-                    f"{job.get('title')}"
-                )
-
+                result.append(job)
                 continue
 
-            result.append(job)
+            print(
+                f"  [TITLE SKIP] "
+                f"{job.get('title')}"
+            )
 
         return result
 
@@ -1009,9 +1030,7 @@ FastAPI, REST APIs, Git, GitHub,
 web development, workflow automation.
 
 Additional skills/projects:
-GCP, Flutter, HTML, CSS, UI/UX,
-Artificial Intelligence, Machine Learning,
-Deep Learning, RAG, vector databases,
+GCP, HTML, CSS, UI/UX,
 PostGIS, automation, database management.
 
 Target locations:
@@ -1032,9 +1051,6 @@ Full Stack Developer
 Web Developer
 Application Developer
 Automation Developer
-AI Developer
-AI Engineer
-ML Engineer
 Junior Data Engineer
 Data Analyst
 
@@ -1044,7 +1060,7 @@ SCORING:
 Excellent match.
 Entry-level/junior role with strong overlap
 with Python/Java/JavaScript/SQL/PostgreSQL/FastAPI/
-REST/web/AI/automation.
+REST/web/automation.
 
 75-89:
 Strong match.
@@ -1079,7 +1095,6 @@ IMPORTANT:
 - Python is a strong candidate skill.
 - PostgreSQL and SQL are strong candidate skills.
 - FastAPI is a strong candidate skill.
-- AI/RAG/vector DB roles can be relevant.
 - Web development roles can be relevant.
 - Full-stack roles can be relevant if backend/API work exists.
 - Pure frontend roles should score lower.
