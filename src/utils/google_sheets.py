@@ -74,6 +74,7 @@ def append_job_to_sheet(
     salary: str = "",
     applied_at: Optional[str] = None,
     tab_name: Optional[str] = None,
+    job_url: Optional[str] = None,
 ) -> bool:
     """
     Appends an applied job to Google Sheets.
@@ -83,7 +84,7 @@ def append_job_to_sheet(
         applied_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     target_tab = tab_name or os.getenv("GOOGLE_SHEET_TAB_NAME", "Applied_Jobs")
-    job_url = f"https://www.naukri.com/job-listings-{job_id}"
+    final_job_url = job_url or f"https://www.naukri.com/job-listings-{job_id}"
     score_val = str(score) if score is not None else ""
 
     payload = {
@@ -97,7 +98,7 @@ def append_job_to_sheet(
         "ai_detail": ai_detail or "",
         "experience": experience or "",
         "salary": salary or "",
-        "job_url": job_url,
+        "job_url": final_job_url,
         "job_id": str(job_id)
     }
 
@@ -135,7 +136,7 @@ def append_job_to_sheet(
                 ai_detail or "",
                 experience or "",
                 salary or "",
-                job_url,
+                final_job_url,
                 str(job_id)
             ]
             ws.append_row(row)
@@ -145,6 +146,39 @@ def append_job_to_sheet(
             return False
 
     return False
+
+
+def append_external_job_to_sheet(
+    job_id: str,
+    title: str,
+    company: str,
+    location: str = "",
+    score: Optional[int] = None,
+    ai_detail: str = "",
+    experience: str = "",
+    salary: str = "",
+    external_url: Optional[str] = None,
+    tab_name: Optional[str] = None,
+) -> bool:
+    """
+    Appends an external apply job to the designated external jobs tab in Google Sheets.
+    Defaults to 'External_Jobs_To_Apply' tab.
+    """
+    target_tab = tab_name or os.getenv("GOOGLE_SHEET_EXTERNAL_TAB", "External_Jobs_To_Apply")
+    target_url = external_url or f"https://www.naukri.com/job-listings-{job_id}"
+
+    return append_job_to_sheet(
+        job_id=job_id,
+        title=title,
+        company=company,
+        location=location,
+        score=score,
+        ai_detail=ai_detail,
+        experience=experience,
+        salary=salary,
+        tab_name=target_tab,
+        job_url=target_url,
+    )
 
 
 def fetch_queued_jobs_from_sheet(queue_tab: Optional[str] = None) -> list:

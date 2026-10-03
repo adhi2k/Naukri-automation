@@ -314,11 +314,21 @@ class JobFilterPipeline2:
         batch_size=3,
         **kwargs,
     ):
-        raw_key = (
-            groq_api_key
-            or os.getenv("GROQ_API_KEY")
-        )
-        self.groq_api_key = raw_key.strip().strip("'").strip('"') if raw_key else None
+        # Load API Key Pool (Supports multiple Groq API keys with automatic failover)
+        keys = []
+        if groq_api_key:
+            keys.append(groq_api_key.strip().strip("'").strip('"'))
+        for env_var in ["GROQ_API_KEY", "GROQ_API_KEY_2", "GROQ_API_KEY_3", "GROQ_API_KEY_SECONDARY"]:
+            val = os.getenv(env_var)
+            if val:
+                cleaned = val.strip().strip("'").strip('"')
+                if cleaned and cleaned not in keys:
+                    keys.append(cleaned)
+
+        self.api_keys = keys
+        self.current_key_idx = 0
+        self.groq_api_key = self.api_keys[0] if self.api_keys else None
+
         raw_model = (
             groq_model
             or os.getenv("GROQ_MODEL")
@@ -1125,49 +1135,60 @@ JOBS:
 {job_block}
 """
 
-        if not self.groq_api_key:
-            print("  [GROQ ERROR] GROQ_API_KEY is not set in .env! Please set your free Groq API key.")
+        if not self.api_keys:
+            print("  [GROQ ERROR] No GROQ_API_KEY found in .env! Please set your free Groq API key.")
             return {}
 
-        try:
-            groq_resp = requests.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.groq_api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": self.groq_model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "response_format": {"type": "json_object"},
-                    "temperature": 0.1
-                },
-                timeout=30
-            )
-            if groq_resp.status_code == 200:
-                payload = groq_resp.json()
-                content = payload.get("choices", [{}])[0].get("message", {}).get("content", "")
-                if content:
-                    clean_content = re.sub(r"```json|```", "", content).strip()
-                    try:
-                        data = json.loads(clean_content)
-                        return data if isinstance(data, dict) else {}
-                    except json.JSONDecodeError:
-                        match = re.search(r"\{.*\}", clean_content, re.S)
-                        if match:
-                            return json.loads(match.group(0))
-            else:
-                print(f"  [GROQ ERROR] HTTP {groq_resp.status_code}: {groq_resp.text[:200]}")
+        attempts = 0
+        max_attempts = len(self.api_keys)
+
+        while attempts < max_attempts:
+            current_key = self.api_keys[self.current_key_idx]
+            try:
+                groq_resp = requests.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {current_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": self.groq_model,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "response_format": {"type": "json_object"},
+                        "temperature": 0.1
+                    },
+                    timeout=30
+                )
+                if groq_resp.status_code == 200:
+                    payload = groq_resp.json()
+                    content = payload.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    if content:
+                        clean_content = re.sub(r"```json|```", "", content).strip()
+                        try:
+                            data = json.loads(clean_content)
+                            return data if isinstance(data, dict) else {}
+                        except json.JSONDecodeError:
+                            match = re.search(r"\{.*\}", clean_content, re.S)
+                            if match:
+                                return json.loads(match.group(0))
+                elif groq_resp.status_code in (429, 401):
+                    # Rate limit or auth error -> rotate to next key in pool
+                    print(f"  [GROQ ROTATE] Key #{self.current_key_idx + 1} hit {groq_resp.status_code}. Switching to next key...")
+                    self.current_key_idx = (self.current_key_idx + 1) % len(self.api_keys)
+                    attempts += 1
+                    continue
+                else:
+                    print(f"  [GROQ ERROR] HTTP {groq_resp.status_code}: {groq_resp.text[:200]}")
+                    return {}
+            except requests.exceptions.Timeout:
+                print(f"  [GROQ TIMEOUT] Request timed out for model {self.groq_model}")
                 return {}
-        except requests.exceptions.Timeout:
-            print(f"  [GROQ TIMEOUT] Request timed out for model {self.groq_model}")
-            return {}
-        except requests.exceptions.ConnectionError:
-            print("  [GROQ CONNECTION ERROR] Failed to connect to Groq Cloud API.")
-            return {}
-        except Exception as e:
-            print(f"  [GROQ ERROR]: {e}")
-            return {}
+            except requests.exceptions.ConnectionError:
+                print("  [GROQ CONNECTION ERROR] Failed to connect to Groq Cloud API.")
+                return {}
+            except Exception as e:
+                print(f"  [GROQ ERROR]: {e}")
+                return {}
 
         return {}
 

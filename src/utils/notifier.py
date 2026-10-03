@@ -24,36 +24,47 @@ def send_mobile_notification(
     total_found: int,
     skipped_ext: int = 0,
     failed_count: int = 0,
-    top_jobs: Optional[list] = None
+    top_jobs: Optional[list] = None,
+    external_jobs: Optional[list] = None,
 ) -> bool:
     """
     Dispatches a push notification to your phone via any configured channel.
     Returns True if at least one notification was successfully delivered.
     """
     now_str = datetime.now().strftime("%I:%M %p")
-    title = f"Naukri Automation: {applied_count} Jobs Applied!"
+    ext_count = len(external_jobs or [])
+    title = f"Naukri Automation: {applied_count} Applied | {ext_count} External Queued"
     
     # Construct clean message body
     lines = [
         f"Daily Naukri Automation Completed ({now_str})",
-        f"- Applied: {applied_count} jobs",
-        f"- Unique Fetched: {total_found} jobs",
+        f"- Applied Directly: {applied_count} jobs",
+        f"- External Queued (Manual): {ext_count} jobs",
+        f"- Total Evaluated: {total_found} jobs",
     ]
-    if skipped_ext > 0:
-        lines.append(f"- External Apply: {skipped_ext} skipped")
     if failed_count > 0:
         lines.append(f"- Failed: {failed_count}")
         
-    lines.append("- Google Sheet: Synced in real-time")
+    lines.append("- Google Sheet: Synced in real-time (Applied_Jobs & External_Jobs_To_Apply)")
 
     if top_jobs:
-        lines.append("\nApplied To:")
+        lines.append("\nApplied Directly (Naukri):")
         for j in top_jobs[:5]:
             job_title = j.get("title") or getattr(j, "title", "Role")
             company = j.get("company") or getattr(j, "company", "Company")
             score = j.get("score") or getattr(j, "score", None)
             score_str = f" ({score}/100)" if score else ""
             lines.append(f"  • {job_title} @ {company}{score_str}")
+
+    if external_jobs:
+        lines.append("\n📌 External Jobs (Manual Apply Queue):")
+        for j in external_jobs[:5]:
+            job_title = j.get("title") or getattr(j, "title", "Role")
+            company = j.get("company") or getattr(j, "company", "Company")
+            score = j.get("score") or getattr(j, "score", None)
+            score_str = f" ({score}/100)" if score else ""
+            url = j.get("url") or j.get("job_url") or ""
+            lines.append(f"  • {job_title} @ {company}{score_str}\n    {url}")
 
     message_text = "\n".join(lines)
     delivered = False
@@ -108,7 +119,48 @@ def send_mobile_notification(
             if resp.status_code in (200, 204):
                 print(f"  {Fore.GREEN}[NOTIFICATION]{Style.RESET_ALL} Discord mobile alert sent!")
                 delivered = True
-        except Exception as e:
-            logger.warning(f"Discord dispatch error: {e}")
+            else:
+                logger.warning(f"Discord dispatch error: {e}")
 
     return delivered
+
+
+def send_external_job_alert(
+    title: str,
+    company: str,
+    job_url: str,
+    score: Optional[int] = None,
+    ai_detail: str = ""
+) -> bool:
+    """
+    Sends an instant push alert specifically for an external job that requires manual application.
+    """
+    alert_title = f"External Job Queued: {company}"
+    score_str = f" | Score: {score}/100" if score else ""
+    msg = (
+        f"External Application Required{score_str}\n"
+        f"• Role: {title}\n"
+        f"• Company: {company}\n"
+        f"• Link: {job_url}\n"
+        f"Logged to Google Sheet tab 'External_Jobs_To_Apply'"
+    )
+
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    if bot_token and chat_id:
+        try:
+            tg_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            requests.post(tg_url, json={"chat_id": chat_id, "text": f"*{alert_title}*\n\n{msg}", "parse_mode": "Markdown"}, timeout=10)
+        except Exception:
+            pass
+
+    ntfy_topic = os.getenv("NTFY_TOPIC")
+    if ntfy_topic:
+        try:
+            ntfy_url = f"https://ntfy.sh/{ntfy_topic}"
+            headers = {"Title": alert_title, "Priority": "high", "Tags": "link,memo", "Click": job_url}
+            requests.post(ntfy_url, data=msg.encode("utf-8"), headers=headers, timeout=10)
+        except Exception:
+            pass
+
+    return True

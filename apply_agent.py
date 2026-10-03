@@ -130,6 +130,75 @@ def save_applied_job(job, score=None, ai_detail=None) -> None:
 
 
 # ----------------------------------------------------------------------------------
+# Persistence — external site jobs (for manual application)
+# ----------------------------------------------------------------------------------
+
+EXTERNAL_CSV_FILE = "external_jobs_to_apply.csv"
+
+
+def save_external_job(job, score=None, ai_detail=None, external_url=None) -> None:
+    """
+    Appends an external company job to external_jobs_to_apply.csv and syncs to Google Sheets.
+    Allows easy manual review and 1-click apply from Google Sheets or CSV.
+    """
+    file_exists = os.path.exists(EXTERNAL_CSV_FILE)
+    fieldnames = ["job_id", "title", "company", "location", "score", "ai_detail", "found_at", "job_url", "external_url"]
+    now_iso = datetime.utcnow().isoformat()
+    now_readable = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    naukri_url = f"https://www.naukri.com/job-listings-{job.job_id}"
+    target_link = external_url or naukri_url
+    location = getattr(job, "location", "")
+
+    # Append to local CSV
+    row_data = {
+        "job_id":       job.job_id,
+        "title":        job.title,
+        "company":      job.company,
+        "location":     location,
+        "score":        score if score is not None else "",
+        "ai_detail":    ai_detail or "",
+        "found_at":     now_iso,
+        "job_url":      naukri_url,
+        "external_url": target_link,
+    }
+
+    if not file_exists:
+        with open(EXTERNAL_CSV_FILE, "a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerow(row_data)
+    else:
+        with open(EXTERNAL_CSV_FILE, "r", newline="", encoding="utf-8") as f:
+            first_line = f.readline().strip()
+            existing_headers = [h.strip() for h in first_line.split(",")]
+
+        with open(EXTERNAL_CSV_FILE, "a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=existing_headers, extrasaction="ignore")
+            writer.writerow(row_data)
+
+    # Sync to Google Sheets tab 'External_Jobs_To_Apply'
+    try:
+        from src.utils.google_sheets import append_external_job_to_sheet
+        target_tab = os.getenv("GOOGLE_SHEET_EXTERNAL_TAB", "External_Jobs_To_Apply")
+        synced = append_external_job_to_sheet(
+            job_id=job.job_id,
+            title=job.title,
+            company=job.company,
+            location=location,
+            score=score,
+            ai_detail=ai_detail,
+            experience=getattr(job, "experience", ""),
+            salary=getattr(job, "salary", ""),
+            external_url=target_link,
+            tab_name=target_tab,
+        )
+        if synced:
+            print(f"  {Fore.GREEN}[Google Sheets]{Style.RESET_ALL} Synced external job to tab '{target_tab}'")
+    except Exception as e:
+        logger.debug(f"Google Sheet external job sync skipped: {e}")
+
+
+# ----------------------------------------------------------------------------------
 # Terminal display helpers
 #
 # All output is routed through these functions so the visual style stays
@@ -192,10 +261,11 @@ def print_status_applied(applied_at=None) -> None:
     print(f"  {Fore.GREEN}Status  :  Applied successfully{Style.RESET_ALL}{ts}")
 
 
-def print_status_skipped_external() -> None:
-    # External apply jobs cannot be submitted via the API. The URL is printed
-    # in the job header so the user can open it manually if needed.
-    print(f"  {Fore.YELLOW}Status  :  Skipped — external apply (open URL manually){Style.RESET_ALL}")
+def print_status_skipped_external(url=None) -> None:
+    # External apply jobs cannot be submitted via the API. Logged to Google Sheets/CSV.
+    print(f"  {Fore.YELLOW}Status  :  Queued for manual apply (External company portal){Style.RESET_ALL}")
+    if url:
+        print(f"  {Fore.CYAN}Apply at:  {Fore.BLUE}{url}{Style.RESET_ALL}")
 
 
 def print_status_failed(error) -> None:
@@ -508,6 +578,7 @@ def run_agent(client=None, auto_bump=None, max_applies=None):
     skipped_ext   = 0
     failed_count  = 0
     applied_jobs_list = []
+    external_jobs_list = []
 
     print_section_title(f"applying to {len(allowed_jobs)} filtered jobs (Daily limit: {daily_apply_limit})")
 
@@ -539,14 +610,48 @@ def run_agent(client=None, auto_bump=None, max_applies=None):
                     pass
             continue
 
-        # External apply jobs cannot be submitted via the API, skip them.
+        # External apply jobs: Log to Google Sheets / CSV and send instant notification for manual applying
         if jc.is_external_apply(job.job_id):
-            print_status_skipped_external()
             skipped_ext += 1
+
+            # Fetch exact company apply URL if available in job payload
+            company_url = ""
+            try:
+                data = jc.get_job_details(job.job_id)
+                job_dict = data.get("job") if isinstance(data, dict) else {}
+                company_url = job_dict.get("companyUrl") or ""
+            except Exception:
+                pass
+
+            target_apply_url = company_url or f"https://www.naukri.com/job-listings-{job.job_id}"
+            print_status_skipped_external(target_apply_url)
+            
+            # Save to external_jobs_to_apply.csv and sync to Google Sheets tab 'External_Jobs_To_Apply'
+            save_external_job(job, score=score, ai_detail=ai_detail, external_url=target_apply_url)
+            external_jobs_list.append({
+                "title": job.title,
+                "company": job.company,
+                "score": score,
+                "url": target_apply_url
+            })
+
+            # Instant push alert for external job
+            try:
+                from src.utils.notifier import send_external_job_alert
+                send_external_job_alert(
+                    title=job.title,
+                    company=job.company,
+                    job_url=target_apply_url,
+                    score=score,
+                    ai_detail=ai_detail
+                )
+            except Exception as notify_err:
+                logger.debug(f"External job alert skipped: {notify_err}")
+
             if getattr(job, "is_queued", False):
                 try:
                     from src.utils.google_sheets import update_queued_job_status
-                    update_queued_job_status(job.job_id, status="SKIPPED (External Apply)")
+                    update_queued_job_status(job.job_id, status="QUEUED_EXTERNAL")
                 except Exception:
                     pass
             continue
@@ -625,7 +730,8 @@ def run_agent(client=None, auto_bump=None, max_applies=None):
             total_found=len(jobs),
             skipped_ext=skipped_ext,
             failed_count=failed_count,
-            top_jobs=applied_jobs_list
+            top_jobs=applied_jobs_list,
+            external_jobs=external_jobs_list,
         )
     except Exception as e:
         logger.debug(f"Mobile notification skipped: {e}")
@@ -635,6 +741,7 @@ def run_agent(client=None, auto_bump=None, max_applies=None):
         "total_allowed": len(allowed_jobs),
         "applied": applied_count,
         "skipped_ext": skipped_ext,
+        "external_queued": len(external_jobs_list),
         "failed": failed_count,
     }
 

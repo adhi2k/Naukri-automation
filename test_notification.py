@@ -57,12 +57,17 @@ def main():
         {"title": "FastAPI / AI Engineer", "company": "Tech Innovations", "score": 92},
     ]
 
+    dummy_ext_jobs = [
+        {"title": "Senior AI Architect", "company": "Global Systems", "score": 94, "url": "https://careers.example.com/job/123"},
+    ]
+
     success = send_mobile_notification(
         applied_count=20,
         total_found=65,
-        skipped_ext=2,
+        skipped_ext=1,
         failed_count=0,
-        top_jobs=dummy_jobs
+        top_jobs=dummy_jobs,
+        external_jobs=dummy_ext_jobs,
     )
 
     if success:

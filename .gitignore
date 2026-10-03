@@ -37,5 +37,8 @@ htmlcov/
 .test_temp_profile/
 service_account.json
 applied_jobs.csv
+applied_internshala.csv
+applied_indeed.csv
+external_jobs_to_apply.csv
 score_cache.json
 daily_runs.log

@@ -109,21 +109,40 @@ def main():
         logger.info("Refreshing profile timestamp for 'Active Today' recruiter badge...")
         bump_profile(client)
 
-    # 3. Job Search + AI Score + Apply + Google Sheet Sync
-    logger.info(f"Executing application pipeline (Max daily quota: {daily_limit})...")
+    # 3. Job Search + AI Score + Apply + Google Sheet Sync (Naukri)
+    logger.info(f"Executing Naukri application pipeline (Max daily quota: {daily_limit})...")
     try:
         summary = run_agent(client=client, auto_bump=False, max_applies=daily_limit)
         applied = summary.get("applied", 0)
         skipped = summary.get("skipped_ext", 0)
         failed = summary.get("failed", 0)
         logger.info(
-            f"Daily run completed: {applied} applied, {skipped} skipped (external), {failed} failed."
+            f"Naukri run completed: {applied} applied, {skipped} skipped (external), {failed} failed."
         )
-        mark_run_completed()
     except Exception as e:
-        logger.error(f"Error during job application run: {e}", exc_info=True)
-        sys.exit(1)
+        logger.error(f"Error during Naukri application run: {e}", exc_info=True)
 
+    # 4. Optional: Internshala Automation
+    if os.getenv("ENABLE_INTERNSHALA", "false").lower() in {"1", "true", "yes", "on"}:
+        try:
+            logger.info("Executing Internshala application pipeline...")
+            from apply_internshala import run_internshala_agent
+            is_summary = run_internshala_agent(max_applies=10)
+            logger.info(f"Internshala run completed: {is_summary.get('applied', 0)} processed.")
+        except Exception as e:
+            logger.warning(f"Internshala run encountered an issue: {e}")
+
+    # 5. Optional: Indeed Automation
+    if os.getenv("ENABLE_INDEED", "false").lower() in {"1", "true", "yes", "on"}:
+        try:
+            logger.info("Executing Indeed application pipeline...")
+            from apply_indeed import run_indeed_agent
+            ind_summary = run_indeed_agent(max_applies=10)
+            logger.info(f"Indeed run completed: {ind_summary.get('applied', 0)} processed.")
+        except Exception as e:
+            logger.warning(f"Indeed run encountered an issue: {e}")
+
+    mark_run_completed()
     print(f"\n{Fore.GREEN}[DONE] Daily automation finished successfully at {datetime.now().strftime('%H:%M:%S')}.{Style.RESET_ALL}\n")
 
 if __name__ == "__main__":
